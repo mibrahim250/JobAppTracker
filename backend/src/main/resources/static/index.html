@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-briefcase"></i> Job Application Tracker</h1>
+            <p>Keep track of your job applications and never miss a follow-up</p>
+        </header>
+
+        <div class="actions">
+            <button id="addJobBtn" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Application
+            </button>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search applications...">
+                <i class="fas fa-search"></i>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalApplications">0</div>
+                <div class="stat-label">Total Applications</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="pendingApplications">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="interviewApplications">0</div>
+                <div class="stat-label">Interviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="rejectedApplications">0</div>
+                <div class="stat-label">Rejected</div>
+            </div>
+        </div>
+
+        <div class="applications-container">
+            <div id="applicationsList" class="applications-list">
+                <!-- Applications will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Edit Job Application -->
+    <div id="jobModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Job Application</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="jobForm">
+                <div class="form-group">
+                    <label for="company">Company *</label>
+                    <input type="text" id="company" name="company" required maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label for="role">Role/Position *</label>
+                    <input type="text" id="role" name="role" required maxlength="200">
+                </div>
+                <div class="form-group">
+                    <label for="status">Status *</label>
+                    <select id="status" name="status" required>
+                        <option value="">Select Status</option>
+                        <option value="Applied">Applied</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Phone Screen">Phone Screen</option>
+                        <option value="Interview">Interview</option>
+                        <option value="Technical Interview">Technical Interview</option>
+                        <option value="Final Interview">Final Interview</option>
+                        <option value="Offer">Offer</option>
+                        <option value="Accepted">Accepted</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Withdrawn">Withdrawn</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="notes">Notes</label>
+                    <textarea id="notes" name="notes" rows="4" maxlength="2000" placeholder="Add any notes about the application, interview questions, or follow-up tasks..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content confirm-modal">
+            <h3>Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to perform this action?</p>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
