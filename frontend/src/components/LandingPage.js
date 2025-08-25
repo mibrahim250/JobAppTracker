@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
+import { registerUser, loginUser } from '../services/userService';
 
 // Get Supabase configuration for validation
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -48,12 +49,7 @@ const LandingPage = ({ onAuthSuccess }) => {
 
       if (isLogin) {
         // Login
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password
-        });
-
-        if (error) throw error;
+        await loginUser(formData.email, formData.password);
         onAuthSuccess();
       } else {
         // Sign up
@@ -61,35 +57,7 @@ const LandingPage = ({ onAuthSuccess }) => {
           throw new Error('Passwords do not match');
         }
 
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              full_name: formData.fullName
-            }
-          }
-        });
-
-        if (error) throw error;
-        
-        // Create user profile in our users table
-        if (data.user) {
-          const { error: profileError } = await supabase
-            .from('users')
-            .insert([
-              {
-                id: data.user.id,
-                username: formData.fullName,
-                email: formData.email
-              }
-            ]);
-
-          if (profileError) {
-            console.error('Profile creation error:', profileError);
-          }
-        }
-
+        await registerUser(formData.fullName, formData.email, formData.password);
         onAuthSuccess();
       }
     } catch (error) {

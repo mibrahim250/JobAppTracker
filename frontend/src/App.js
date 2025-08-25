@@ -25,6 +25,7 @@ function App() {
   const [currentTheme, setCurrentTheme] = useState('default');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [demoMode, setDemoMode] = useState(true); // FORCE DEMO MODE - Always show landing page
 
   useEffect(() => {
     checkAuthStatus();
@@ -143,8 +144,18 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
-      const userData = await getCurrentUserData();
-      setUser(userData);
+      console.log('Demo mode:', demoMode); // Debug log
+      if (demoMode) {
+        // Force show landing page for demo purposes
+        console.log('Forcing landing page display'); // Debug log
+        // Clear any cached authentication
+        localStorage.removeItem('supabase.auth.token');
+        sessionStorage.clear();
+        setUser(null);
+      } else {
+        const userData = await getCurrentUserData();
+        setUser(userData);
+      }
     } catch (error) {
       console.error('Auth check failed:', error);
     } finally {
@@ -153,8 +164,13 @@ function App() {
   };
 
   const handleAuthSuccess = async () => {
-    await checkAuthStatus();
-    showNotification('Welcome! You are now logged in.', 'success');
+    if (demoMode) {
+      // In demo mode, just show a success message but stay on landing page
+      showNotification('Demo mode: Authentication would work here! 🍂', 'success');
+    } else {
+      await checkAuthStatus();
+      showNotification('Welcome! You are now logged in.', 'success');
+    }
   };
 
   const handleLogout = async () => {
@@ -240,7 +256,12 @@ function App() {
             />
           </>
         ) : (
-          <LandingPage onAuthSuccess={handleAuthSuccess} />
+          <>
+            <div style={{position: 'fixed', top: '10px', right: '10px', background: 'red', color: 'white', padding: '5px', zIndex: 9999}}>
+              DEMO MODE ACTIVE
+            </div>
+            <LandingPage onAuthSuccess={handleAuthSuccess} />
+          </>
         )}
         
         {notification && (

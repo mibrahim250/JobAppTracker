@@ -17,6 +17,9 @@ export const registerUser = async (username, email, password) => {
       throw new Error(authError.message);
     }
 
+    // Wait a moment for the auth to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Create user profile in our users table
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -31,11 +34,15 @@ export const registerUser = async (username, email, password) => {
       .single();
 
     if (userError) {
-      throw new Error(userError.message);
+      console.error('User profile creation error:', userError);
+      // Don't throw error here, as the user is already created in auth
+      // Just return the auth user data
+      return authData.user;
     }
 
     return userData;
   } catch (error) {
+    console.error('Registration error:', error);
     throw new Error(error.message);
   }
 };
@@ -82,6 +89,26 @@ export const getCurrentUserData = async () => {
 
     if (error) {
       console.error('Error fetching user data:', error);
+      // If user profile doesn't exist, create it
+      if (error.code === 'PGRST116') {
+        const { data: newUserData, error: createError } = await supabase
+          .from('users')
+          .insert([
+            {
+              id: user.id,
+              username: user.user_metadata?.username || user.email?.split('@')[0],
+              email: user.email
+            }
+          ])
+          .select()
+          .single();
+
+        if (createError) {
+          console.error('Error creating user profile:', createError);
+          return user;
+        }
+        return newUserData;
+      }
       return user;
     }
 
