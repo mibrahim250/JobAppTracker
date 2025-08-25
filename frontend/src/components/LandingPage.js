@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 
+// Get Supabase configuration for validation
+const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'placeholder-key';
+
 const LandingPage = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
@@ -37,6 +41,11 @@ const LandingPage = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
+      // Check if Supabase is properly configured
+      if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') {
+        throw new Error('Supabase is not configured. Please set up your environment variables.');
+      }
+
       if (isLogin) {
         // Login
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -141,6 +150,19 @@ const LandingPage = ({ onAuthSuccess }) => {
         {error && (
           <div className="error-message">
             {error}
+          </div>
+        )}
+
+        {(supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') && (
+          <div className="setup-message">
+            <h3>🚀 Setup Required</h3>
+            <p>To use this app, you need to configure Supabase:</p>
+            <ol>
+              <li>Create a Supabase project</li>
+              <li>Set up the database tables (see SUPABASE_SETUP_INSTRUCTIONS.md)</li>
+              <li>Add your Supabase URL and API key to environment variables</li>
+            </ol>
+            <p><strong>For now, you can view the beautiful landing page! 🍂</strong></p>
           </div>
         )}
 
@@ -250,10 +272,28 @@ const LandingPage = ({ onAuthSuccess }) => {
         </div>
 
         <div className="social-login">
-          <button className="social-btn" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}>
+          <button 
+            className="social-btn" 
+            onClick={() => {
+              if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') {
+                setError('Supabase is not configured. Please set up your environment variables.');
+              } else {
+                supabase.auth.signInWithOAuth({ provider: 'google' });
+              }
+            }}
+          >
             <span>🍁</span> Google
           </button>
-          <button className="social-btn" onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })}>
+          <button 
+            className="social-btn" 
+            onClick={() => {
+              if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') {
+                setError('Supabase is not configured. Please set up your environment variables.');
+              } else {
+                supabase.auth.signInWithOAuth({ provider: 'github' });
+              }
+            }}
+          >
             <span>🌰</span> GitHub
           </button>
         </div>
@@ -544,12 +584,48 @@ const LandingPage = ({ onAuthSuccess }) => {
           overflow: hidden;
         }
 
-        .strength-bar {
-          height: 100%;
-          width: 0%;
-          transition: all 0.3s ease;
-          border-radius: 2px;
-        }
+                 .strength-bar {
+           height: 100%;
+           width: 0%;
+           transition: all 0.3s ease;
+           border-radius: 2px;
+         }
+
+         .setup-message {
+           background: rgba(255, 193, 7, 0.1);
+           border: 1px solid #ffc107;
+           border-radius: 12px;
+           padding: 20px;
+           margin-bottom: 20px;
+           color: #ffc107;
+         }
+
+         .setup-message h3 {
+           color: #ffc107;
+           margin-bottom: 10px;
+           font-size: 18px;
+         }
+
+         .setup-message p {
+           color: rgba(255, 193, 7, 0.8);
+           margin-bottom: 10px;
+           font-size: 14px;
+         }
+
+         .setup-message ol {
+           margin: 10px 0;
+           padding-left: 20px;
+         }
+
+         .setup-message li {
+           color: rgba(255, 193, 7, 0.8);
+           margin-bottom: 5px;
+           font-size: 14px;
+         }
+
+         .setup-message strong {
+           color: #ffc107;
+         }
       `}</style>
     </div>
   );
