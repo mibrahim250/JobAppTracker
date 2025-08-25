@@ -1,10 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../config/supabase';
-import { registerUser, loginUser } from '../services/userService';
-
-// Get Supabase configuration for validation
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || 'placeholder-key';
 
 const LandingPage = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -42,22 +36,17 @@ const LandingPage = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
-      // Check if Supabase is properly configured
-      if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') {
-        throw new Error('Supabase is not configured. Please set up your environment variables.');
-      }
+      // Simulate authentication delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       if (isLogin) {
-        // Login
-        await loginUser(formData.email, formData.password);
+        // Demo login - just show success and go to main app
         onAuthSuccess();
       } else {
-        // Sign up
+        // Demo signup
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Passwords do not match');
         }
-
-        await registerUser(formData.fullName, formData.email, formData.password);
         onAuthSuccess();
       }
     } catch (error) {
@@ -96,8 +85,8 @@ const LandingPage = ({ onAuthSuccess }) => {
       <div className="container">
         <div className="logo">
           <div className="logo-icon">🍂</div>
-          <h1>Job Application Tracker</h1>
-          <p className="subtitle">Track your career journey with style</p>
+          <h1>Welcome</h1>
+          <p className="subtitle">Your autumn journey begins here</p>
         </div>
 
         <div className="form-toggle">
@@ -118,19 +107,6 @@ const LandingPage = ({ onAuthSuccess }) => {
         {error && (
           <div className="error-message">
             {error}
-          </div>
-        )}
-
-        {(supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') && (
-          <div className="setup-message">
-            <h3>🚀 Setup Required</h3>
-            <p>To use this app, you need to configure Supabase:</p>
-            <ol>
-              <li>Create a Supabase project</li>
-              <li>Set up the database tables (see SUPABASE_SETUP_INSTRUCTIONS.md)</li>
-              <li>Add your Supabase URL and API key to environment variables</li>
-            </ol>
-            <p><strong>For now, you can view the beautiful landing page! 🍂</strong></p>
           </div>
         )}
 
@@ -165,6 +141,12 @@ const LandingPage = ({ onAuthSuccess }) => {
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? 'Signing In...' : 'Sign In'}
           </button>
+
+          <div className="forgot-password">
+            <a href="#" onClick={(e) => { e.preventDefault(); alert('Password reset functionality would be implemented here 🍂'); }}>
+              Forgot your password?
+            </a>
+          </div>
         </form>
 
         {/* Signup Form */}
@@ -230,6 +212,11 @@ const LandingPage = ({ onAuthSuccess }) => {
             />
           </div>
 
+          <div className="checkbox-group">
+            <input type="checkbox" id="agreeTerms" required />
+            <label htmlFor="agreeTerms">I agree to the Terms of Service and Privacy Policy</label>
+          </div>
+
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
@@ -242,27 +229,15 @@ const LandingPage = ({ onAuthSuccess }) => {
         <div className="social-login">
           <button 
             className="social-btn" 
-            onClick={() => {
-              if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') {
-                setError('Supabase is not configured. Please set up your environment variables.');
-              } else {
-                supabase.auth.signInWithOAuth({ provider: 'google' });
-              }
-            }}
+            onClick={() => alert('Google authentication would be implemented here 🍁')}
           >
             <span>🍁</span> Google
           </button>
           <button 
             className="social-btn" 
-            onClick={() => {
-              if (supabaseUrl === 'https://placeholder.supabase.co' || supabaseAnonKey === 'placeholder-key') {
-                setError('Supabase is not configured. Please set up your environment variables.');
-              } else {
-                supabase.auth.signInWithOAuth({ provider: 'github' });
-              }
-            }}
+            onClick={() => alert('Apple authentication would be implemented here 🌰')}
           >
-            <span>🌰</span> GitHub
+            <span>🌰</span> Apple
           </button>
         </div>
       </div>
@@ -481,6 +456,22 @@ const LandingPage = ({ onAuthSuccess }) => {
           cursor: not-allowed;
         }
 
+        .forgot-password {
+          text-align: center;
+          margin-top: 20px;
+        }
+
+        .forgot-password a {
+          color: #ff6b35;
+          text-decoration: none;
+          font-size: 14px;
+          transition: color 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+          color: #ff8c42;
+        }
+
         .divider {
           text-align: center;
           margin: 30px 0;
@@ -552,48 +543,30 @@ const LandingPage = ({ onAuthSuccess }) => {
           overflow: hidden;
         }
 
-                 .strength-bar {
-           height: 100%;
-           width: 0%;
-           transition: all 0.3s ease;
-           border-radius: 2px;
-         }
+        .strength-bar {
+          height: 100%;
+          width: 0%;
+          transition: all 0.3s ease;
+          border-radius: 2px;
+        }
 
-         .setup-message {
-           background: rgba(255, 193, 7, 0.1);
-           border: 1px solid #ffc107;
-           border-radius: 12px;
-           padding: 20px;
-           margin-bottom: 20px;
-           color: #ffc107;
-         }
+        .checkbox-group {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 25px;
+        }
 
-         .setup-message h3 {
-           color: #ffc107;
-           margin-bottom: 10px;
-           font-size: 18px;
-         }
+        .checkbox-group input[type="checkbox"] {
+          width: auto;
+          margin: 0;
+        }
 
-         .setup-message p {
-           color: rgba(255, 193, 7, 0.8);
-           margin-bottom: 10px;
-           font-size: 14px;
-         }
-
-         .setup-message ol {
-           margin: 10px 0;
-           padding-left: 20px;
-         }
-
-         .setup-message li {
-           color: rgba(255, 193, 7, 0.8);
-           margin-bottom: 5px;
-           font-size: 14px;
-         }
-
-         .setup-message strong {
-           color: #ffc107;
-         }
+        .checkbox-group label {
+          margin: 0;
+          font-size: 14px;
+          cursor: pointer;
+        }
       `}</style>
     </div>
   );

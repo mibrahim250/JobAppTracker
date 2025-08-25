@@ -9,8 +9,6 @@ import Notification from './components/Notification';
 import SakuraPetals from './components/SakuraPetals';
 import DataVisualization from './components/DataVisualization';
 import LandingPage from './components/LandingPage';
-import { fetchApplications, createApplication, updateApplication, deleteApplication } from './services/api';
-import { getCurrentUserData, logoutUser } from './services/userService';
 
 function App() {
   const [applications, setApplications] = useState([]);
@@ -23,22 +21,32 @@ function App() {
   const [notification, setNotification] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTheme, setCurrentTheme] = useState('default');
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [demoMode, setDemoMode] = useState(true); // FORCE DEMO MODE - Always show landing page
+  const [loading, setLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Always start with landing page
 
   useEffect(() => {
-    checkAuthStatus();
+    // Force clear all cached data
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Reset authentication state
+    setIsAuthenticated(false);
+    
     // Load theme preference from localStorage
     const savedTheme = localStorage.getItem('theme') || 'default';
     setCurrentTheme(savedTheme);
+    // Load applications from localStorage
+    loadApplications();
+    
+    console.log('App started - showing landing page');
   }, []);
 
-  useEffect(() => {
-    if (user) {
-      loadApplications();
-    }
-  }, [user]);
+  const handleAuthSuccess = () => {
+    setIsAuthenticated(true);
+    showNotification('Welcome! You are now logged in.', 'success');
+  };
+
+  // Remove this useEffect since we don't need user-based loading
 
   useEffect(() => {
     // Apply theme class to body
@@ -61,13 +69,16 @@ function App() {
     }
   }, [searchTerm, applications]);
 
-  const loadApplications = async () => {
+  const loadApplications = () => {
     try {
-      const data = await fetchApplications();
+      const savedApplications = localStorage.getItem('jobApplications');
+      const data = savedApplications ? JSON.parse(savedApplications) : [];
       setApplications(data);
       setFilteredApplications(data);
     } catch (error) {
-      showNotification('Error loading applications', 'error');
+      console.error('Error loading applications:', error);
+      setApplications([]);
+      setFilteredApplications([]);
     }
   };
 
@@ -86,28 +97,52 @@ function App() {
     setIsConfirmModalOpen(true);
   };
 
-  const handleSaveApplication = async (applicationData) => {
+  const handleSaveApplication = (applicationData) => {
     try {
+      const newApplications = [...applications];
+      
       if (editingApplication) {
-        await updateApplication(editingApplication.id, applicationData);
+        // Update existing application
+        const index = newApplications.findIndex(app => app.id === editingApplication.id);
+        if (index !== -1) {
+          newApplications[index] = { ...editingApplication, ...applicationData };
+        }
         showNotification('Application updated successfully!', 'success');
       } else {
-        await createApplication(applicationData);
+        // Add new application
+        const newApp = {
+          id: Date.now().toString(), // Simple ID generation
+          ...applicationData,
+          created_at: new Date().toISOString()
+        };
+        newApplications.unshift(newApp); // Add to beginning
         showNotification('Application added successfully!', 'success');
       }
-      await loadApplications();
+      
+      // Save to localStorage
+      localStorage.setItem('jobApplications', JSON.stringify(newApplications));
+      
+      // Update state
+      setApplications(newApplications);
+      setFilteredApplications(newApplications);
       setIsModalOpen(false);
       setEditingApplication(null);
     } catch (error) {
-      showNotification(error.message || 'Error saving application', 'error');
+      showNotification('Error saving application', 'error');
     }
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = () => {
     try {
-      await deleteApplication(editingApplication.id);
+      const newApplications = applications.filter(app => app.id !== editingApplication.id);
+      
+      // Save to localStorage
+      localStorage.setItem('jobApplications', JSON.stringify(newApplications));
+      
+      // Update state
+      setApplications(newApplications);
+      setFilteredApplications(newApplications);
       showNotification('Application deleted successfully!', 'success');
-      await loadApplications();
       setIsConfirmModalOpen(false);
       setEditingApplication(null);
     } catch (error) {
@@ -142,68 +177,9 @@ function App() {
     setIsDataVizOpen(false);
   };
 
-  const checkAuthStatus = async () => {
-    try {
-      console.log('Demo mode:', demoMode); // Debug log
-      if (demoMode) {
-        // Force show landing page for demo purposes
-        console.log('Forcing landing page display'); // Debug log
-        // Clear any cached authentication
-        localStorage.removeItem('supabase.auth.token');
-        sessionStorage.clear();
-        setUser(null);
-      } else {
-        const userData = await getCurrentUserData();
-        setUser(userData);
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAuthSuccess = async () => {
-    if (demoMode) {
-      // In demo mode, just show a success message but stay on landing page
-      showNotification('Demo mode: Authentication would work here! 🍂', 'success');
-    } else {
-      await checkAuthStatus();
-      showNotification('Welcome! You are now logged in.', 'success');
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logoutUser();
-      setUser(null);
-      setApplications([]);
-      setFilteredApplications([]);
-      showNotification('You have been logged out.', 'info');
-    } catch (error) {
-      showNotification('Error logging out', 'error');
-    }
-  };
+  // Authentication removed - app works without user accounts
 
 
-
-  if (loading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        background: 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)',
-        color: '#e5e5e5'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📊</div>
-          <div>Loading Job Application Tracker...</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -211,13 +187,11 @@ function App() {
 
       <div className="background-pattern"></div>
       <div className="container">
-        {user ? (
+        {isAuthenticated ? (
           <>
             <Header 
               currentTheme={currentTheme}
               onThemeChange={handleThemeChange}
-              user={user}
-              onLogout={handleLogout}
             />
             
             <Actions 
@@ -257,8 +231,20 @@ function App() {
           </>
         ) : (
           <>
-            <div style={{position: 'fixed', top: '10px', right: '10px', background: 'red', color: 'white', padding: '5px', zIndex: 9999}}>
-              DEMO MODE ACTIVE
+            <div style={{
+              position: 'fixed', 
+              top: '10px', 
+              right: '10px', 
+              background: 'linear-gradient(135deg, #ff6b35, #ff8c42)', 
+              color: 'white', 
+              padding: '8px 12px', 
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              zIndex: 9999,
+              boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)'
+            }}>
+              🍂 LANDING PAGE
             </div>
             <LandingPage onAuthSuccess={handleAuthSuccess} />
           </>
