@@ -1,58 +1,95 @@
-const STORAGE_KEY = 'jobApplications';
-
-// Helper functions for localStorage
-const getApplications = () => {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  return stored ? JSON.parse(stored) : [];
-};
-
-const saveApplications = (applications) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(applications));
-};
+import { supabase } from '../config/supabase';
 
 export const fetchApplications = async () => {
-  return getApplications();
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data || [];
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };
 
 export const fetchApplication = async (id) => {
-  const applications = getApplications();
-  const application = applications.find(app => app.id === parseInt(id));
-  if (!application) {
-    throw new Error('Application not found');
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error) {
+    throw new Error(error.message);
   }
-  return application;
 };
 
 export const createApplication = async (applicationData) => {
-  const applications = getApplications();
-  const newApplication = {
-    ...applicationData,
-    id: Date.now(), // Simple ID generation
-    createdAt: new Date().toISOString()
-  };
-  applications.push(newApplication);
-  saveApplications(applications);
-  return newApplication;
+  try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('No authenticated user');
+
+    const { data, error } = await supabase
+      .from('job_applications')
+      .insert([{
+        ...applicationData,
+        user_id: user.id
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };
 
 export const updateApplication = async (id, applicationData) => {
-  const applications = getApplications();
-  const index = applications.findIndex(app => app.id === parseInt(id));
-  if (index === -1) {
-    throw new Error('Application not found');
+  try {
+    const { data, error } = await supabase
+      .from('job_applications')
+      .update(applicationData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return data;
+  } catch (error) {
+    throw new Error(error.message);
   }
-  
-  applications[index] = {
-    ...applications[index],
-    ...applicationData,
-    updatedAt: new Date().toISOString()
-  };
-  saveApplications(applications);
-  return applications[index];
 };
 
 export const deleteApplication = async (id) => {
-  const applications = getApplications();
-  const filteredApplications = applications.filter(app => app.id !== parseInt(id));
-  saveApplications(filteredApplications);
+  try {
+    const { error } = await supabase
+      .from('job_applications')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };

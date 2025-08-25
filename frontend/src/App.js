@@ -8,7 +8,9 @@ import ConfirmModal from './components/ConfirmModal';
 import Notification from './components/Notification';
 import SakuraPetals from './components/SakuraPetals';
 import DataVisualization from './components/DataVisualization';
+import LandingPage from './components/LandingPage';
 import { fetchApplications, createApplication, updateApplication, deleteApplication } from './services/api';
+import { getCurrentUserData, logoutUser } from './services/userService';
 
 function App() {
   const [applications, setApplications] = useState([]);
@@ -16,17 +18,26 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isDataVizOpen, setIsDataVizOpen] = useState(false);
+
   const [editingApplication, setEditingApplication] = useState(null);
   const [notification, setNotification] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTheme, setCurrentTheme] = useState('default');
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadApplications();
+    checkAuthStatus();
     // Load theme preference from localStorage
     const savedTheme = localStorage.getItem('theme') || 'default';
     setCurrentTheme(savedTheme);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadApplications();
+    }
+  }, [user]);
 
   useEffect(() => {
     // Apply theme class to body
@@ -130,51 +141,107 @@ function App() {
     setIsDataVizOpen(false);
   };
 
+  const checkAuthStatus = async () => {
+    try {
+      const userData = await getCurrentUserData();
+      setUser(userData);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAuthSuccess = async () => {
+    await checkAuthStatus();
+    showNotification('Welcome! You are now logged in.', 'success');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      setUser(null);
+      setApplications([]);
+      setFilteredApplications([]);
+      showNotification('You have been logged out.', 'info');
+    } catch (error) {
+      showNotification('Error logging out', 'error');
+    }
+  };
+
+
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)',
+        color: '#e5e5e5'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📊</div>
+          <div>Loading Job Application Tracker...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {currentTheme === 'sakura' && <SakuraPetals />}
 
       <div className="background-pattern"></div>
       <div className="container">
-        <Header 
-          currentTheme={currentTheme}
-          onThemeChange={handleThemeChange}
-        />
-        
-        <Actions 
-          onAddApplication={handleAddApplication}
-          onShowDataViz={handleShowDataViz}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-        />
-        
-        <Stats applications={applications} />
-        
-        <ApplicationsList 
-          applications={filteredApplications}
-          onEdit={handleEditApplication}
-          onDelete={handleDeleteApplication}
-        />
-        
-        <JobModal
-          isOpen={isModalOpen}
-          onClose={closeModal}
-          onSave={handleSaveApplication}
-          application={editingApplication}
-        />
-        
-        <ConfirmModal
-          isOpen={isConfirmModalOpen}
-          onClose={closeConfirmModal}
-          onConfirm={handleConfirmDelete}
-          application={editingApplication}
-        />
+        {user ? (
+          <>
+            <Header 
+              currentTheme={currentTheme}
+              onThemeChange={handleThemeChange}
+              user={user}
+              onLogout={handleLogout}
+            />
+            
+            <Actions 
+              onAddApplication={handleAddApplication}
+              onShowDataViz={handleShowDataViz}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+            />
+            
+            <Stats applications={applications} />
+            
+            <ApplicationsList 
+              applications={filteredApplications}
+              onEdit={handleEditApplication}
+              onDelete={handleDeleteApplication}
+            />
+            
+            <JobModal
+              isOpen={isModalOpen}
+              onClose={closeModal}
+              onSave={handleSaveApplication}
+              application={editingApplication}
+            />
+            
+            <ConfirmModal
+              isOpen={isConfirmModalOpen}
+              onClose={closeConfirmModal}
+              onConfirm={handleConfirmDelete}
+              application={editingApplication}
+            />
 
-        <DataVisualization
-          applications={applications}
-          isOpen={isDataVizOpen}
-          onClose={handleCloseDataViz}
-        />
+            <DataVisualization
+              applications={applications}
+              isOpen={isDataVizOpen}
+              onClose={handleCloseDataViz}
+            />
+          </>
+        ) : (
+          <LandingPage onAuthSuccess={handleAuthSuccess} />
+        )}
         
         {notification && (
           <Notification
