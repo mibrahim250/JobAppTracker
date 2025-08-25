@@ -1,0 +1,14 @@
+{
+  "name": "job-app-tracker",
+  "version": "1.0.0",
+  "description": "Job Application Tracker with React frontend and Spring Boot backend",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start",
+    "install-deps": "cd frontend && npm install"
+  }
+}
