@@ -19,12 +19,14 @@ const JobModal = ({ isOpen, onClose, onSave, application }) => {
         appliedDate: application.appliedDate || ''
       });
     } else {
+      // Set default date to today when adding a new job application
+      const today = new Date().toISOString().split('T')[0];
       setFormData({
         company: '',
         role: '',
         status: '',
         notes: '',
-        appliedDate: ''
+        appliedDate: today
       });
     }
   }, [application]);

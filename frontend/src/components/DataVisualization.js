@@ -72,6 +72,24 @@ const DataVisualization = ({ applications, isOpen, onClose }) => {
     return Object.entries(responseTimes).map(([range, count]) => ({ range, count }));
   };
 
+  // Color scheme for brown/orange theme
+  const getStatusColor = (status) => {
+    const colors = {
+      'Applied': '#d2691e',
+      'Under Review': '#ffa500',
+      'Phone Screen': '#32cd32',
+      'Interview': '#32cd32',
+      'Technical Interview': '#32cd32',
+      'Final Interview': '#32cd32',
+      'Offer': '#ffd700',
+      'Accepted': '#00ff00',
+      'Rejected': '#dc143c',
+      'No Response': '#808080',
+      'Withdrawn': '#a9a9a9'
+    };
+    return colors[status] || '#808080';
+  };
+
   // Convert data for Recharts
   const statusCounts = getStatusCounts();
   const monthlyData = getMonthlyData();
@@ -95,24 +113,6 @@ const DataVisualization = ({ applications, isOpen, onClose }) => {
     value,
     color: getStatusColor(name)
   }));
-
-  // Color scheme for brown/orange theme
-  const getStatusColor = (status) => {
-    const colors = {
-      'Applied': '#d2691e',
-      'Under Review': '#ffa500',
-      'Phone Screen': '#32cd32',
-      'Interview': '#32cd32',
-      'Technical Interview': '#32cd32',
-      'Final Interview': '#32cd32',
-      'Offer': '#ffd700',
-      'Accepted': '#00ff00',
-      'Rejected': '#dc143c',
-      'No Response': '#808080',
-      'Withdrawn': '#a9a9a9'
-    };
-    return colors[status] || '#808080';
-  };
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
