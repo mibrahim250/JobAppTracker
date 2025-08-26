@@ -2,11 +2,10 @@
 ALTER TABLE public.job_applications 
 ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
 
--- Update existing records (if any) to have a default user (you may want to handle this differently)
--- For now, we'll set existing records to NULL so they don't show up for any user
-UPDATE public.job_applications SET user_id = NULL WHERE user_id IS NULL;
+-- Delete existing records that don't belong to any user (like the Starbucks test data)
+DELETE FROM public.job_applications WHERE user_id IS NULL;
 
--- Make user_id NOT NULL for new records
+-- Now we can safely make user_id NOT NULL for new records
 ALTER TABLE public.job_applications ALTER COLUMN user_id SET NOT NULL;
 
 -- Enable Row Level Security on job_applications table

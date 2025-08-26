@@ -54,9 +54,11 @@ function App() {
       if (event === 'SIGNED_IN' && session?.user) {
         setIsAuthenticated(true);
         showNotification('Welcome back!', 'success');
+        // Load applications when user signs in
+        loadApplications();
       } else if (event === 'SIGNED_OUT') {
-        setIsAuthenticated(false);
-        showNotification('You have been signed out.', 'info');
+        // Don't show notification here as it might conflict with manual logout
+        console.log('User signed out via auth state change');
       }
     });
     
@@ -71,15 +73,30 @@ function App() {
 
   const handleLogout = async () => {
     try {
+      // Clear local storage data
+      localStorage.removeItem('jobApplications');
+      
+      // Sign out from Supabase
       const { error } = await auth.signOut();
+      
+      // Immediately set authentication to false
+      setIsAuthenticated(false);
+      
+      // Clear applications state
+      setApplications([]);
+      setFilteredApplications([]);
+      
       if (error) {
         showNotification('Error signing out: ' + error.message, 'error');
       } else {
-        setIsAuthenticated(false);
         showNotification('You have been signed out successfully.', 'info');
       }
     } catch (error) {
-      showNotification('Error signing out: ' + error.message, 'error');
+      // Even if there's an error, force logout
+      setIsAuthenticated(false);
+      setApplications([]);
+      setFilteredApplications([]);
+      showNotification('You have been signed out.', 'info');
     }
   };
 
