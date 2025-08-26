@@ -1,7 +1,7 @@
 import React from 'react';
 import Settings from './Settings';
 
-const Header = ({ currentTheme, onThemeChange }) => {
+const Header = ({ currentTheme, onThemeChange, onLogout }) => {
   return (
     <header className="header">
       <div className="header-content">
@@ -14,6 +14,7 @@ const Header = ({ currentTheme, onThemeChange }) => {
             <Settings 
               currentTheme={currentTheme}
               onThemeChange={onThemeChange}
+              onLogout={onLogout}
             />
           </div>
         </div>

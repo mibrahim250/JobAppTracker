@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from '../config/supabase';
 
 const LandingPage = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
+    email: 'ibrahim.muhm25@gmail.com',
     password: '',
     confirmPassword: ''
   });
@@ -36,20 +37,47 @@ const LandingPage = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
-      // Simulate authentication delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      console.log('Form submission:', { isLogin, formData });
+      
       if (isLogin) {
-        // Demo login - just show success and go to main app
+        // Real Supabase login
+        const { data, error } = await auth.signIn(formData.email, formData.password);
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        console.log('Login successful:', data);
         onAuthSuccess();
       } else {
-        // Demo signup
+        // Real Supabase signup
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Passwords do not match');
         }
-        onAuthSuccess();
+        
+        if (formData.password.length < 6) {
+          throw new Error('Password must be at least 6 characters long');
+        }
+        
+        const { data, error } = await auth.signUp(formData.email, formData.password, {
+          full_name: formData.fullName
+        });
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        console.log('Signup successful:', data);
+        
+        // Check if email confirmation is required
+        if (data.user && !data.user.email_confirmed_at) {
+          setError('Please check your email and confirm your account before signing in.');
+        } else {
+          onAuthSuccess();
+        }
       }
     } catch (error) {
+      console.error('Authentication error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -61,7 +89,7 @@ const LandingPage = ({ onAuthSuccess }) => {
     setError('');
     setFormData({
       fullName: '',
-      email: '',
+      email: 'ibrahim.muhm25@gmail.com',
       password: '',
       confirmPassword: ''
     });
@@ -366,6 +394,8 @@ const LandingPage = ({ onAuthSuccess }) => {
           border-radius: 12px;
           margin-bottom: 30px;
           padding: 4px;
+          position: relative;
+          z-index: 10;
         }
 
         .toggle-btn {
@@ -379,12 +409,20 @@ const LandingPage = ({ onAuthSuccess }) => {
           font-size: 16px;
           font-weight: 500;
           transition: all 0.3s ease;
+          position: relative;
+          z-index: 11;
+        }
+
+        .toggle-btn:hover {
+          color: #ffffff;
+          background: rgba(255, 107, 53, 0.1);
         }
 
         .toggle-btn.active {
           background: linear-gradient(135deg, #ff6b35, #ff8c42);
           color: white;
           box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+          transform: scale(1.02);
         }
 
         .error-message {
@@ -418,6 +456,7 @@ const LandingPage = ({ onAuthSuccess }) => {
           color: #ffffff;
           font-size: 16px;
           transition: all 0.3s ease;
+          box-sizing: border-box;
         }
 
         input:focus {
@@ -425,6 +464,12 @@ const LandingPage = ({ onAuthSuccess }) => {
           border-color: #ff6b35;
           background: rgba(60, 60, 60, 0.5);
           box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+          transform: translateY(-1px);
+        }
+
+        input:hover {
+          border-color: rgba(255, 107, 53, 0.3);
+          background: rgba(60, 60, 60, 0.4);
         }
 
         input::placeholder {
@@ -444,16 +489,30 @@ const LandingPage = ({ onAuthSuccess }) => {
           transition: all 0.3s ease;
           box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
           margin-bottom: 20px;
+          position: relative;
+          overflow: hidden;
         }
 
         .submit-btn:hover:not(:disabled) {
           transform: translateY(-2px);
           box-shadow: 0 12px 25px rgba(255, 107, 53, 0.4);
+          background: linear-gradient(135deg, #ff8c42, #ff6b35);
+        }
+
+        .submit-btn:active:not(:disabled) {
+          transform: translateY(0);
+          box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
         }
 
         .submit-btn:disabled {
           opacity: 0.7;
           cursor: not-allowed;
+          transform: none;
+        }
+
+        .submit-btn:disabled:hover {
+          transform: none;
+          box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
         }
 
         .forgot-password {
@@ -523,16 +582,17 @@ const LandingPage = ({ onAuthSuccess }) => {
           background: rgba(255, 107, 53, 0.1);
         }
 
-        .signup-form {
+        .login-form, .signup-form {
           display: none;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.3s ease;
         }
 
-        .signup-form.active {
+        .login-form.active, .signup-form.active {
           display: block;
-        }
-
-        .login-form.active {
-          display: block;
+          opacity: 1;
+          transform: translateY(0);
         }
 
         .password-strength {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const Settings = ({ currentTheme, onThemeChange }) => {
+const Settings = ({ currentTheme, onThemeChange, onLogout }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const toggleDropdown = () => {
@@ -15,6 +15,11 @@ const Settings = ({ currentTheme, onThemeChange }) => {
   const handleDataVisualization = () => {
     // Placeholder for data visualization feature
     alert('Data Visualization feature coming soon!');
+  };
+
+  const handleLogout = () => {
+    onLogout();
+    setIsDropdownOpen(false);
   };
 
   return (
@@ -59,6 +64,16 @@ const Settings = ({ currentTheme, onThemeChange }) => {
             >
               <i className="fas fa-chart-bar"></i>
               Data Visualization
+            </button>
+          </div>
+          
+          <div className="settings-item">
+            <button 
+              className="settings-option-btn logout-btn"
+              onClick={handleLogout}
+            >
+              <i className="fas fa-sign-out-alt"></i>
+              Logout
             </button>
           </div>
         </div>

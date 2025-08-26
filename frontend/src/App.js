@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from './config/supabase';
 import Header from './components/Header';
 import Actions from './components/Actions';
 import Stats from './components/Stats';
@@ -25,25 +26,61 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Always start with landing page
 
   useEffect(() => {
-    // Force clear all cached data
-    localStorage.clear();
-    sessionStorage.clear();
-    
-    // Reset authentication state
-    setIsAuthenticated(false);
-    
     // Load theme preference from localStorage
     const savedTheme = localStorage.getItem('theme') || 'default';
     setCurrentTheme(savedTheme);
+    
     // Load applications from localStorage
     loadApplications();
     
-    console.log('App started - showing landing page');
+    // Check for existing auth session
+    const checkAuth = async () => {
+      const { data: { user } } = await auth.getCurrentUser();
+      if (user) {
+        setIsAuthenticated(true);
+        console.log('User already authenticated:', user.email);
+      } else {
+        setIsAuthenticated(false);
+        console.log('No authenticated user found');
+      }
+    };
+    
+    checkAuth();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        setIsAuthenticated(true);
+        showNotification('Welcome back!', 'success');
+      } else if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false);
+        showNotification('You have been signed out.', 'info');
+      }
+    });
+    
+    // Cleanup subscription on unmount
+    return () => subscription?.unsubscribe();
   }, []);
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
     showNotification('Welcome! You are now logged in.', 'success');
+  };
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await auth.signOut();
+      if (error) {
+        showNotification('Error signing out: ' + error.message, 'error');
+      } else {
+        setIsAuthenticated(false);
+        showNotification('You have been signed out successfully.', 'info');
+      }
+    } catch (error) {
+      showNotification('Error signing out: ' + error.message, 'error');
+    }
   };
 
   // Remove this useEffect since we don't need user-based loading
@@ -192,6 +229,7 @@ function App() {
             <Header 
               currentTheme={currentTheme}
               onThemeChange={handleThemeChange}
+              onLogout={handleLogout}
             />
             
             <Actions 

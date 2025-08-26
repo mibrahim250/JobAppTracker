@@ -170,6 +170,22 @@ body {
     width: 16px;
 }
 
+.logout-btn {
+    background: linear-gradient(135deg, rgba(220, 20, 60, 0.1), rgba(220, 20, 60, 0.05)) !important;
+    border-color: rgba(220, 20, 60, 0.3) !important;
+    color: #ff4757 !important;
+}
+
+.logout-btn:hover {
+    background: linear-gradient(135deg, rgba(220, 20, 60, 0.2), rgba(220, 20, 60, 0.1)) !important;
+    border-color: rgba(220, 20, 60, 0.5) !important;
+    color: #ff6b7a !important;
+}
+
+.logout-btn i {
+    color: #ff4757 !important;
+}
+
 /* Toggle Switch */
 .toggle-btn {
     position: relative;
