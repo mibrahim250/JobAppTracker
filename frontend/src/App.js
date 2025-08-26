@@ -10,7 +10,7 @@ import Notification from './components/Notification';
 import SakuraPetals from './components/SakuraPetals';
 import DataVisualization from './components/DataVisualization';
 import LandingPage from './components/LandingPage';
-import TestAuth from './components/TestAuth';
+// import TestAuth from './components/TestAuth';
 
 function App() {
   const [applications, setApplications] = useState([]);
@@ -24,7 +24,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTheme, setCurrentTheme] = useState('default');
   const [loading, setLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); // Always start with landing page
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Always authenticated for personal use
 
   useEffect(() => {
     // Load theme preference from localStorage
@@ -73,32 +73,8 @@ function App() {
   };
 
   const handleLogout = async () => {
-    try {
-      // Clear local storage data
-      localStorage.removeItem('jobApplications');
-      
-      // Sign out from Supabase
-      const { error } = await auth.signOut();
-      
-      // Immediately set authentication to false
-      setIsAuthenticated(false);
-      
-      // Clear applications state
-      setApplications([]);
-      setFilteredApplications([]);
-      
-      if (error) {
-        showNotification('Error signing out: ' + error.message, 'error');
-      } else {
-        showNotification('You have been signed out successfully.', 'info');
-      }
-    } catch (error) {
-      // Even if there's an error, force logout
-      setIsAuthenticated(false);
-      setApplications([]);
-      setFilteredApplications([]);
-      showNotification('You have been signed out.', 'info');
-    }
+    // Logout disabled for personal use - just show a message
+    showNotification('Logout disabled - this is your personal app!', 'info');
   };
 
   // Remove this useEffect since we don't need user-based loading
@@ -307,8 +283,8 @@ function App() {
               onClose={handleCloseDataViz}
             />
             
-            {/* Temporary test component */}
-            <TestAuth />
+            {/* Temporary test component - commented out for personal use */}
+            {/* <TestAuth /> */}
           </>
         ) : (
           <>
@@ -327,7 +303,18 @@ function App() {
             }}>
               🍂 LANDING PAGE
             </div>
-            <LandingPage onAuthSuccess={handleAuthSuccess} />
+            {/* Landing page commented out - going directly to main app */}
+            {/* <LandingPage onAuthSuccess={handleAuthSuccess} /> */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              height: '100vh',
+              color: 'white',
+              fontSize: '18px'
+            }}>
+              Loading your job tracker...
+            </div>
           </>
         )}
         
