@@ -106,12 +106,25 @@ function App() {
     }
   }, [searchTerm, applications]);
 
-  const loadApplications = () => {
+  const loadApplications = async () => {
     try {
+      // Get current user
+      const { data: { user } } = await auth.getCurrentUser();
+      
+      if (!user) {
+        setApplications([]);
+        setFilteredApplications([]);
+        return;
+      }
+
       const savedApplications = localStorage.getItem('jobApplications');
-      const data = savedApplications ? JSON.parse(savedApplications) : [];
-      setApplications(data);
-      setFilteredApplications(data);
+      const allData = savedApplications ? JSON.parse(savedApplications) : [];
+      
+      // Filter applications by current user
+      const userApplications = allData.filter(app => app.user_id === user.id);
+      
+      setApplications(userApplications);
+      setFilteredApplications(userApplications);
     } catch (error) {
       console.error('Error loading applications:', error);
       setApplications([]);
@@ -134,8 +147,16 @@ function App() {
     setIsConfirmModalOpen(true);
   };
 
-  const handleSaveApplication = (applicationData) => {
+  const handleSaveApplication = async (applicationData) => {
     try {
+      // Get current user
+      const { data: { user } } = await auth.getCurrentUser();
+      
+      if (!user) {
+        showNotification('You must be logged in to save applications', 'error');
+        return;
+      }
+
       const newApplications = [...applications];
       
       if (editingApplication) {
@@ -150,13 +171,14 @@ function App() {
         const newApp = {
           id: Date.now().toString(), // Simple ID generation
           ...applicationData,
+          user_id: user.id,
           created_at: new Date().toISOString()
         };
         newApplications.unshift(newApp); // Add to beginning
         showNotification('Application added successfully!', 'success');
       }
       
-      // Save to localStorage
+      // Save to localStorage (for now, we'll keep this for demo purposes)
       localStorage.setItem('jobApplications', JSON.stringify(newApplications));
       
       // Update state
