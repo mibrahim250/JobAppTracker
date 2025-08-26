@@ -31,6 +31,7 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
         if (!formData.email || !formData.password) {
           throw new Error('Please fill in all fields');
         }
+        console.log('Attempting login for:', formData.email);
         await loginUser(formData.email, formData.password);
       } else {
         // Register
@@ -43,12 +44,15 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
         if (formData.password.length < 6) {
           throw new Error('Password must be at least 6 characters');
         }
-        await registerUser(formData.username, formData.email, formData.password);
+        console.log('Attempting registration for:', formData.email, 'username:', formData.username);
+        const result = await registerUser(formData.username, formData.email, formData.password);
+        console.log('Registration result:', result);
       }
       
       onAuthSuccess();
       onClose();
     } catch (error) {
+      console.error('Auth error:', error);
       setError(error.message);
     } finally {
       setLoading(false);

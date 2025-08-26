@@ -2,7 +2,8 @@ import { supabase } from '../config/supabase';
 
 export const registerUser = async (username, email, password) => {
   try {
-    // First, sign up the user with Supabase Auth
+    // Sign up the user with Supabase Auth
+    // The trigger will automatically create the user profile in the users table
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -17,30 +18,8 @@ export const registerUser = async (username, email, password) => {
       throw new Error(authError.message);
     }
 
-    // Wait a moment for the auth to complete
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Create user profile in our users table
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .insert([
-        {
-          id: authData.user.id,
-          username: username,
-          email: email
-        }
-      ])
-      .select()
-      .single();
-
-    if (userError) {
-      console.error('User profile creation error:', userError);
-      // Don't throw error here, as the user is already created in auth
-      // Just return the auth user data
-      return authData.user;
-    }
-
-    return userData;
+    // Return the auth user data - the trigger will handle profile creation
+    return authData.user;
   } catch (error) {
     console.error('Registration error:', error);
     throw new Error(error.message);

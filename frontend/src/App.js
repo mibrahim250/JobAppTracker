@@ -10,6 +10,7 @@ import Notification from './components/Notification';
 import SakuraPetals from './components/SakuraPetals';
 import DataVisualization from './components/DataVisualization';
 import LandingPage from './components/LandingPage';
+import TestAuth from './components/TestAuth';
 
 function App() {
   const [applications, setApplications] = useState([]);
@@ -305,6 +306,9 @@ function App() {
               isOpen={isDataVizOpen}
               onClose={handleCloseDataViz}
             />
+            
+            {/* Temporary test component */}
+            <TestAuth />
           </>
         ) : (
           <>
