@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from './config/supabase';
+import { 
+  getCurrentUserData, 
+  getApplicationsByEmail, 
+  addJobApplicationByEmail,
+  syncUserApplications,
+  checkEmailVerification 
+} from './services/userService';
 import Header from './components/Header';
 import Actions from './components/Actions';
 import Stats from './components/Stats';
@@ -10,6 +17,8 @@ import Notification from './components/Notification';
 import SakuraPetals from './components/SakuraPetals';
 import DataVisualization from './components/DataVisualization';
 import LandingPage from './components/LandingPage';
+import UserOnboarding from './components/UserOnboarding';
+import AuthModal from './components/AuthModal';
 // import TestAuth from './components/TestAuth';
 
 function App() {
@@ -18,13 +27,15 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isDataVizOpen, setIsDataVizOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   const [editingApplication, setEditingApplication] = useState(null);
   const [notification, setNotification] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentTheme, setCurrentTheme] = useState('default');
   const [loading, setLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(true); // Always authenticated for personal use
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Start as not authenticated
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     // Load theme preference from localStorage
@@ -40,6 +51,25 @@ function App() {
       if (user) {
         setIsAuthenticated(true);
         console.log('User already authenticated:', user.email);
+        
+        // Check email verification
+        const isEmailVerified = await checkEmailVerification();
+        if (!isEmailVerified) {
+          showNotification('Please verify your email address for full functionality', 'warning');
+        }
+        
+        // Check if user needs onboarding
+        const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+        if (!onboardingCompleted) {
+          setIsOnboardingOpen(true);
+        }
+        
+        // Try to sync any existing localStorage applications to database
+        try {
+          await syncUserApplications();
+        } catch (syncError) {
+          console.log('Sync failed, continuing with local data:', syncError);
+        }
       } else {
         setIsAuthenticated(false);
         console.log('No authenticated user found');
@@ -69,7 +99,9 @@ function App() {
 
   const handleAuthSuccess = () => {
     setIsAuthenticated(true);
+    setShowAuthModal(false);
     showNotification('Welcome! You are now logged in.', 'success');
+    loadApplications(); // Load applications after successful auth
   };
 
   const handleLogout = async () => {
@@ -111,6 +143,31 @@ function App() {
         return;
       }
 
+      // First, try to load from database using email
+      try {
+        const dbApplications = await getApplicationsByEmail(user.email);
+        if (dbApplications && dbApplications.length > 0) {
+          // Convert database format to app format
+          const formattedApplications = dbApplications.map(app => ({
+            id: app.id,
+            company: app.company,
+            role: app.role,
+            status: app.status,
+            applied_date: app.applied_date,
+            notes: app.notes,
+            created_at: app.created_at,
+            user_id: user.id
+          }));
+          
+          setApplications(formattedApplications);
+          setFilteredApplications(formattedApplications);
+          return;
+        }
+      } catch (dbError) {
+        console.log('No database applications found, checking localStorage...');
+      }
+
+      // Fallback to localStorage
       const savedApplications = localStorage.getItem('jobApplications');
       const allData = savedApplications ? JSON.parse(savedApplications) : [];
       
@@ -151,33 +208,58 @@ function App() {
         return;
       }
 
-      const newApplications = [...applications];
-      
       if (editingApplication) {
         // Update existing application
+        const newApplications = [...applications];
         const index = newApplications.findIndex(app => app.id === editingApplication.id);
         if (index !== -1) {
           newApplications[index] = { ...editingApplication, ...applicationData };
         }
+        
+        // Save to localStorage for now (we'll implement database updates later)
+        localStorage.setItem('jobApplications', JSON.stringify(newApplications));
+        setApplications(newApplications);
+        setFilteredApplications(newApplications);
         showNotification('Application updated successfully!', 'success');
       } else {
-        // Add new application
-        const newApp = {
-          id: Date.now().toString(), // Simple ID generation
-          ...applicationData,
-          user_id: user.id,
-          created_at: new Date().toISOString()
-        };
-        newApplications.unshift(newApp); // Add to beginning
-        showNotification('Application added successfully!', 'success');
+        // Add new application to database
+        try {
+          const appId = await addJobApplicationByEmail(user.email, applicationData);
+          
+          const newApp = {
+            id: appId,
+            ...applicationData,
+            user_id: user.id,
+            created_at: new Date().toISOString()
+          };
+          
+          const newApplications = [newApp, ...applications];
+          
+          // Also save to localStorage as backup
+          localStorage.setItem('jobApplications', JSON.stringify(newApplications));
+          
+          setApplications(newApplications);
+          setFilteredApplications(newApplications);
+          showNotification('Application added successfully!', 'success');
+        } catch (dbError) {
+          console.error('Database save failed, using localStorage:', dbError);
+          
+          // Fallback to localStorage
+          const newApp = {
+            id: Date.now().toString(),
+            ...applicationData,
+            user_id: user.id,
+            created_at: new Date().toISOString()
+          };
+          
+          const newApplications = [newApp, ...applications];
+          localStorage.setItem('jobApplications', JSON.stringify(newApplications));
+          setApplications(newApplications);
+          setFilteredApplications(newApplications);
+          showNotification('Application added (offline mode)!', 'success');
+        }
       }
       
-      // Save to localStorage (for now, we'll keep this for demo purposes)
-      localStorage.setItem('jobApplications', JSON.stringify(newApplications));
-      
-      // Update state
-      setApplications(newApplications);
-      setFilteredApplications(newApplications);
       setIsModalOpen(false);
       setEditingApplication(null);
     } catch (error) {
@@ -228,6 +310,14 @@ function App() {
 
   const handleCloseDataViz = () => {
     setIsDataVizOpen(false);
+  };
+
+  const handleOnboardingComplete = (preferences) => {
+    // Apply user preferences
+    if (preferences.theme) {
+      setCurrentTheme(preferences.theme);
+    }
+    showNotification('Welcome! Your preferences have been saved.', 'success');
   };
 
   // Authentication removed - app works without user accounts
@@ -282,39 +372,19 @@ function App() {
               isOpen={isDataVizOpen}
               onClose={handleCloseDataViz}
             />
+
+            <UserOnboarding
+              isOpen={isOnboardingOpen}
+              onClose={() => setIsOnboardingOpen(false)}
+              onComplete={handleOnboardingComplete}
+            />
             
             {/* Temporary test component - commented out for personal use */}
             {/* <TestAuth /> */}
           </>
         ) : (
           <>
-            <div style={{
-              position: 'fixed', 
-              top: '10px', 
-              right: '10px', 
-              background: 'linear-gradient(135deg, #ff6b35, #ff8c42)', 
-              color: 'white', 
-              padding: '8px 12px', 
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              zIndex: 9999,
-              boxShadow: '0 4px 12px rgba(255, 107, 53, 0.3)'
-            }}>
-              🍂 LANDING PAGE
-            </div>
-            {/* Landing page commented out - going directly to main app */}
-            {/* <LandingPage onAuthSuccess={handleAuthSuccess} /> */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center', 
-              height: '100vh',
-              color: 'white',
-              fontSize: '18px'
-            }}>
-              Loading your job tracker...
-            </div>
+            <LandingPage onAuthSuccess={handleAuthSuccess} />
           </>
         )}
         

@@ -41,7 +41,10 @@ const LandingPage = ({ onAuthSuccess }) => {
       
       if (isLogin) {
         // Real Supabase login
-        const { data, error } = await auth.signIn(formData.email, formData.password);
+        const { data, error } = await auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password
+        });
         
         if (error) {
           throw new Error(error.message);
@@ -59,8 +62,14 @@ const LandingPage = ({ onAuthSuccess }) => {
           throw new Error('Password must be at least 6 characters long');
         }
         
-        const { data, error } = await auth.signUp(formData.email, formData.password, {
-          full_name: formData.fullName
+        const { data, error } = await auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.fullName
+            }
+          }
         });
         
         if (error) {

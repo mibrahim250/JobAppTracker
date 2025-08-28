@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { registerUser, loginUser } from '../services/userService';
+import PasswordReset from './PasswordReset';
 
 const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -11,6 +12,7 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,6 +70,14 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
       password: '',
       confirmPassword: ''
     });
+  };
+
+  const handleForgotPassword = () => {
+    setShowPasswordReset(true);
+  };
+
+  const handleClosePasswordReset = () => {
+    setShowPasswordReset(false);
   };
 
   if (!isOpen) return null;
@@ -135,6 +145,21 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
               minLength="6"
               placeholder="Enter your password"
             />
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#d2691e',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                fontSize: '12px',
+                marginTop: '5px'
+              }}
+            >
+              Forgot Password?
+            </button>
           </div>
 
           {!isLogin && (
@@ -187,6 +212,12 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
             {isLogin ? 'Create Account' : 'Login'}
           </button>
         </div>
+
+        <PasswordReset
+          isOpen={showPasswordReset}
+          onClose={handleClosePasswordReset}
+          mode="request"
+        />
       </div>
     </div>
   );
