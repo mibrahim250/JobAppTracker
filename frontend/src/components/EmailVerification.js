@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
+import { sendEmailVerification, checkEmailVerification } from '../services/userService';
 
 const EmailVerification = ({ isOpen, onClose, onVerified }) => {
   const [user, setUser] = useState(null);
   const [isVerified, setIsVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
-  const [checkingStatus, setCheckingStatus] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -19,8 +20,8 @@ const EmailVerification = ({ isOpen, onClose, onVerified }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUser(user);
-        // Check if email is verified in Supabase Auth
-        setIsVerified(!!user.email_confirmed_at);
+        const verified = await checkEmailVerification();
+        setIsVerified(verified);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -35,14 +36,8 @@ const EmailVerification = ({ isOpen, onClose, onVerified }) => {
 
     try {
       setLoading(true);
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: user.email
-      });
-
-      if (error) throw error;
-      
-      showMessage('Verification email sent! Check your inbox and spam folder.', 'success');
+      await sendEmailVerification(user.email);
+      showMessage('Verification email sent! Check your inbox.', 'success');
     } catch (error) {
       showMessage(error.message, 'error');
     } finally {
@@ -50,37 +45,41 @@ const EmailVerification = ({ isOpen, onClose, onVerified }) => {
     }
   };
 
-  const handleCheckVerification = async () => {
+  const handleVerifyToken = async (e) => {
+    e.preventDefault();
+    
+    if (!verificationToken.trim()) {
+      showMessage('Please enter the verification token', 'error');
+      return;
+    }
+
     try {
-      setCheckingStatus(true);
+      setLoading(true);
       
-      // Refresh the user session to get updated verification status
-      const { data, error } = await supabase.auth.refreshSession();
+      // Try to verify the token
+      const { data, error } = await supabase.auth.verifyOtp({
+        token: verificationToken,
+        type: 'signup'
+      });
       
       if (error) throw error;
       
-      if (data.user?.email_confirmed_at) {
-        setIsVerified(true);
-        showMessage('Email verified successfully!', 'success');
-        
-        // Update our users table to reflect verification
-        await supabase
-          .from('users')
-          .update({ email_verified: true })
-          .eq('id', data.user.id);
-        
-        setTimeout(() => {
-          onVerified();
-          onClose();
-        }, 2000);
-      } else {
-        showMessage('Email not yet verified. Please check your email and click the verification link.', 'info');
-      }
+      setIsVerified(true);
+      showMessage('Email verified successfully!', 'success');
+      
+      setTimeout(() => {
+        onVerified();
+        onClose();
+      }, 2000);
     } catch (error) {
-      showMessage('Error checking verification status: ' + error.message, 'error');
+      showMessage('Invalid verification token. Please try again.', 'error');
     } finally {
-      setCheckingStatus(false);
+      setLoading(false);
     }
+  };
+
+  const handleRefreshVerification = async () => {
+    await loadUserData();
   };
 
   const showMessage = (text, type) => {
@@ -103,13 +102,9 @@ const EmailVerification = ({ isOpen, onClose, onVerified }) => {
             padding: '12px',
             marginBottom: '20px',
             borderRadius: '8px',
-            background: message.type === 'success' ? 'rgba(76, 175, 80, 0.1)' : 
-                       message.type === 'error' ? 'rgba(244, 67, 54, 0.1)' :
-                       'rgba(33, 150, 243, 0.1)',
-            border: `1px solid ${message.type === 'success' ? '#4caf50' : 
-                                message.type === 'error' ? '#f44336' : '#2196f3'}`,
-            color: message.type === 'success' ? '#4caf50' : 
-                   message.type === 'error' ? '#f44336' : '#2196f3'
+            background: message.type === 'success' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
+            border: `1px solid ${message.type === 'success' ? '#4caf50' : '#f44336'}`,
+            color: message.type === 'success' ? '#4caf50' : '#f44336'
           }}>
             {message.text}
           </div>
@@ -180,30 +175,41 @@ const EmailVerification = ({ isOpen, onClose, onVerified }) => {
                 paddingTop: '20px' 
               }}>
                 <h4 style={{ color: '#d2691e', marginBottom: '10px' }}>
-                  Step 2: Check Verification Status
+                  Step 2: Enter Verification Token
                 </h4>
-                <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px', marginBottom: '15px' }}>
-                  After clicking the verification link in your email, click the button below to check your verification status.
-                </p>
-                
-                <div className="form-actions">
-                  <button 
-                    type="button" 
-                    className="btn btn-secondary" 
-                    onClick={loadUserData}
-                    disabled={checkingStatus}
-                  >
-                    Refresh Status
-                  </button>
-                  <button 
-                    type="button" 
-                    className="btn btn-primary" 
-                    onClick={handleCheckVerification}
-                    disabled={checkingStatus}
-                  >
-                    {checkingStatus ? 'Checking...' : 'Check Verification'}
-                  </button>
-                </div>
+                <form onSubmit={handleVerifyToken}>
+                  <div className="form-group">
+                    <label>Verification Token</label>
+                    <input
+                      type="text"
+                      value={verificationToken}
+                      onChange={(e) => setVerificationToken(e.target.value)}
+                      placeholder="Enter the token from your email"
+                      required
+                    />
+                    <small style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '12px' }}>
+                      Check your email for the verification token
+                    </small>
+                  </div>
+                  
+                  <div className="form-actions">
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary" 
+                      onClick={handleRefreshVerification}
+                      disabled={loading}
+                    >
+                      Refresh Status
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary" 
+                      disabled={loading}
+                    >
+                      {loading ? 'Verifying...' : 'Verify Email'}
+                    </button>
+                  </div>
+                </form>
               </div>
 
               <div style={{ 
@@ -215,32 +221,7 @@ const EmailVerification = ({ isOpen, onClose, onVerified }) => {
               }}>
                 <div style={{ color: '#2196f3', marginBottom: '10px' }}>
                   <i className="fas fa-lightbulb"></i>
-                  <strong> How Email Verification Works</strong>
-                </div>
-                <ol style={{ 
-                  color: 'rgba(255, 255, 255, 0.8)', 
-                  fontSize: '14px', 
-                  margin: 0, 
-                  paddingLeft: '20px' 
-                }}>
-                  <li>Click "Send Verification Email" to receive a verification link</li>
-                  <li>Check your email (including spam/junk folder)</li>
-                  <li>Click the verification link in the email</li>
-                  <li>Return to this page and click "Check Verification"</li>
-                  <li>Your email will be marked as verified automatically</li>
-                </ol>
-              </div>
-
-              <div style={{ 
-                background: 'rgba(255, 152, 0, 0.1)', 
-                border: '1px solid #ff9800', 
-                borderRadius: '8px', 
-                padding: '15px', 
-                marginTop: '15px' 
-              }}>
-                <div style={{ color: '#ff9800', marginBottom: '10px' }}>
-                  <i className="fas fa-exclamation-triangle"></i>
-                  <strong> Troubleshooting</strong>
+                  <strong> Need Help?</strong>
                 </div>
                 <ul style={{ 
                   color: 'rgba(255, 255, 255, 0.8)', 
@@ -248,10 +229,9 @@ const EmailVerification = ({ isOpen, onClose, onVerified }) => {
                   margin: 0, 
                   paddingLeft: '20px' 
                 }}>
-                  <li>Check your spam/junk folder for the verification email</li>
+                  <li>Check your spam/junk folder</li>
                   <li>Make sure you entered the correct email address</li>
                   <li>Click "Send Verification Email" again if needed</li>
-                  <li>Wait a few minutes for the email to arrive</li>
                   <li>Contact support if you continue having issues</li>
                 </ul>
               </div>
