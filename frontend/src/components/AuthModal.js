@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { registerUser, loginUser } from '../services/userService';
 import PasswordReset from './PasswordReset';
+import EmailVerification from './EmailVerification';
 
 const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +14,8 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [registeredUser, setRegisteredUser] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -35,6 +38,8 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
         }
         console.log('Attempting login for:', formData.email);
         await loginUser(formData.email, formData.password);
+        onAuthSuccess();
+        onClose();
       } else {
         // Register
         if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -49,27 +54,17 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
         console.log('Attempting registration for:', formData.email, 'username:', formData.username);
         const result = await registerUser(formData.username, formData.email, formData.password);
         console.log('Registration result:', result);
+        
+        // Show email verification after successful registration
+        setRegisteredUser(result);
+        setShowEmailVerification(true);
       }
-      
-      onAuthSuccess();
-      onClose();
     } catch (error) {
       console.error('Auth error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const toggleMode = () => {
-    setIsLogin(!isLogin);
-    setError('');
-    setFormData({
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: ''
-    });
   };
 
   const handleForgotPassword = () => {
@@ -80,94 +75,142 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
     setShowPasswordReset(false);
   };
 
+  const handleEmailVerified = () => {
+    setShowEmailVerification(false);
+    onAuthSuccess();
+    onClose();
+  };
+
+  const handleCloseEmailVerification = () => {
+    setShowEmailVerification(false);
+    setRegisteredUser(null);
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="modal show">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h2>{isLogin ? 'Login' : 'Create Account'}</h2>
-          <span className="close" onClick={onClose}>&times;</span>
+    <div className="auth-modal-overlay">
+      <div className="auth-container">
+        <div className="logo"></div>
+        
+        <h1>Welcome</h1>
+        <p className="subtitle">Your autumn journey begins here</p>
+        
+        <div className="tab-container">
+          <div 
+            className={`tab ${isLogin ? 'active' : ''}`}
+            onClick={() => setIsLogin(true)}
+          >
+            Sign In
+          </div>
+          <div 
+            className={`tab ${!isLogin ? 'active' : ''}`}
+            onClick={() => setIsLogin(false)}
+          >
+            Sign Up
+          </div>
         </div>
         
-        <form onSubmit={handleSubmit}>
-          {error && (
-            <div className="error-message" style={{
-              background: 'rgba(220, 20, 60, 0.1)',
-              border: '1px solid #dc143c',
-              borderRadius: '8px',
-              padding: '12px',
-              marginBottom: '20px',
-              color: '#dc143c'
-            }}>
-              {error}
-            </div>
-          )}
+        {/* Sign In Form */}
+        <div className={`form-section ${isLogin ? 'active' : ''}`} id="signin-form">
+          <form onSubmit={handleSubmit}>
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
 
-          {!isLogin && (
             <div className="form-group">
-              <label htmlFor="username">Username *</label>
+              <label htmlFor="signin-email">Email Address</label>
+              <input
+                type="email"
+                id="signin-email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                placeholder="Enter your email"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="signin-password">Password</label>
+              <input
+                type="password"
+                id="signin-password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength="6"
+                placeholder="••••••••"
+              />
+            </div>
+            
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? 'Loading...' : 'Sign In'}
+            </button>
+          </form>
+          
+          <div className="forgot-password">
+            <a href="#" onClick={handleForgotPassword}>Forgot your password?</a>
+          </div>
+        </div>
+        
+        {/* Sign Up Form */}
+        <div className={`form-section ${!isLogin ? 'active' : ''}`} id="signup-form">
+          <form onSubmit={handleSubmit}>
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+
+            <div className="form-group">
+              <label htmlFor="signup-name">Full Name</label>
               <input
                 type="text"
-                id="username"
+                id="signup-name"
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
                 required
-                maxLength="50"
-                placeholder="Enter your username"
+                placeholder="Enter your full name"
               />
             </div>
-          )}
-
-          <div className="form-group">
-            <label htmlFor="email">Email *</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="Enter your email"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password *</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              minLength="6"
-              placeholder="Enter your password"
-            />
-            <button
-              type="button"
-              onClick={handleForgotPassword}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#d2691e',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                fontSize: '12px',
-                marginTop: '5px'
-              }}
-            >
-              Forgot Password?
-            </button>
-          </div>
-
-          {!isLogin && (
+            
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password *</label>
+              <label htmlFor="signup-email">Email Address</label>
+              <input
+                type="email"
+                id="signup-email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                placeholder="Enter your email"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="signup-password">Password</label>
               <input
                 type="password"
-                id="confirmPassword"
+                id="signup-password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                minLength="6"
+                placeholder="Create a password"
+              />
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="signup-confirm">Confirm Password</label>
+              <input
+                type="password"
+                id="signup-confirm"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
@@ -176,49 +219,40 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
                 placeholder="Confirm your password"
               />
             </div>
-          )}
-
-          <div className="form-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancel
+            
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? 'Loading...' : 'Sign Up'}
             </button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Loading...' : (isLogin ? 'Login' : 'Create Account')}
-            </button>
-          </div>
-        </form>
-
-        <div style={{
-          textAlign: 'center',
-          marginTop: '20px',
-          paddingTop: '20px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-        }}>
-          <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '10px' }}>
-            {isLogin ? "Don't have an account?" : "Already have an account?"}
-          </p>
-          <button
-            type="button"
-            onClick={toggleMode}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#d2691e',
-              textDecoration: 'underline',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            {isLogin ? 'Create Account' : 'Login'}
+          </form>
+        </div>
+        
+        <div className="divider">
+          <span>or continue with</span>
+        </div>
+        
+        <div className="social-buttons">
+          <button className="social-btn">
+            <span style={{color: '#ea4335'}}>●</span> Google
+          </button>
+          <button className="social-btn">
+            <span style={{color: '#000'}}>🍎</span> Apple
           </button>
         </div>
-
-        <PasswordReset
-          isOpen={showPasswordReset}
-          onClose={handleClosePasswordReset}
-          mode="request"
-        />
       </div>
+
+      {/* Password Reset Modal */}
+      {showPasswordReset && (
+        <PasswordReset onClose={handleClosePasswordReset} />
+      )}
+
+      {/* Email Verification Modal */}
+      {showEmailVerification && registeredUser && (
+        <EmailVerification
+          user={registeredUser}
+          onVerified={handleEmailVerified}
+          onClose={handleCloseEmailVerification}
+        />
+      )}
     </div>
   );
 };

@@ -16,7 +16,7 @@ import ConfirmModal from './components/ConfirmModal';
 import Notification from './components/Notification';
 import SakuraPetals from './components/SakuraPetals';
 import DataVisualization from './components/DataVisualization';
-import LandingPage from './components/LandingPage';
+
 import UserOnboarding from './components/UserOnboarding';
 import AuthModal from './components/AuthModal';
 // import TestAuth from './components/TestAuth';
@@ -143,39 +143,27 @@ function App() {
         return;
       }
 
-      // First, try to load from database using email
-      try {
-        const dbApplications = await getApplicationsByEmail(user.email);
-        if (dbApplications && dbApplications.length > 0) {
-          // Convert database format to app format
-          const formattedApplications = dbApplications.map(app => ({
-            id: app.id,
-            company: app.company,
-            role: app.role,
-            status: app.status,
-            applied_date: app.applied_date,
-            notes: app.notes,
-            created_at: app.created_at,
-            user_id: user.id
-          }));
-          
-          setApplications(formattedApplications);
-          setFilteredApplications(formattedApplications);
-          return;
-        }
-      } catch (dbError) {
-        console.log('No database applications found, checking localStorage...');
+      // Load from database only
+      const dbApplications = await getApplicationsByEmail(user.email);
+      if (dbApplications && dbApplications.length > 0) {
+        // Convert database format to app format
+        const formattedApplications = dbApplications.map(app => ({
+          id: app.id,
+          company: app.company,
+          role: app.role,
+          status: app.status,
+          applied_date: app.applied_date,
+          notes: app.notes,
+          created_at: app.created_at,
+          user_id: user.id
+        }));
+        
+        setApplications(formattedApplications);
+        setFilteredApplications(formattedApplications);
+      } else {
+        setApplications([]);
+        setFilteredApplications([]);
       }
-
-      // Fallback to localStorage
-      const savedApplications = localStorage.getItem('jobApplications');
-      const allData = savedApplications ? JSON.parse(savedApplications) : [];
-      
-      // Filter applications by current user
-      const userApplications = allData.filter(app => app.user_id === user.id);
-      
-      setApplications(userApplications);
-      setFilteredApplications(userApplications);
     } catch (error) {
       console.error('Error loading applications:', error);
       setApplications([]);
@@ -209,55 +197,32 @@ function App() {
       }
 
       if (editingApplication) {
-        // Update existing application
+        // Update existing application - TODO: Implement database update
         const newApplications = [...applications];
         const index = newApplications.findIndex(app => app.id === editingApplication.id);
         if (index !== -1) {
           newApplications[index] = { ...editingApplication, ...applicationData };
         }
         
-        // Save to localStorage for now (we'll implement database updates later)
-        localStorage.setItem('jobApplications', JSON.stringify(newApplications));
         setApplications(newApplications);
         setFilteredApplications(newApplications);
         showNotification('Application updated successfully!', 'success');
       } else {
         // Add new application to database
-        try {
-          const appId = await addJobApplicationByEmail(user.email, applicationData);
-          
-          const newApp = {
-            id: appId,
-            ...applicationData,
-            user_id: user.id,
-            created_at: new Date().toISOString()
-          };
-          
-          const newApplications = [newApp, ...applications];
-          
-          // Also save to localStorage as backup
-          localStorage.setItem('jobApplications', JSON.stringify(newApplications));
-          
-          setApplications(newApplications);
-          setFilteredApplications(newApplications);
-          showNotification('Application added successfully!', 'success');
-        } catch (dbError) {
-          console.error('Database save failed, using localStorage:', dbError);
-          
-          // Fallback to localStorage
-          const newApp = {
-            id: Date.now().toString(),
-            ...applicationData,
-            user_id: user.id,
-            created_at: new Date().toISOString()
-          };
-          
-          const newApplications = [newApp, ...applications];
-          localStorage.setItem('jobApplications', JSON.stringify(newApplications));
-          setApplications(newApplications);
-          setFilteredApplications(newApplications);
-          showNotification('Application added (offline mode)!', 'success');
-        }
+        const appId = await addJobApplicationByEmail(user.email, applicationData);
+        
+        const newApp = {
+          id: appId,
+          ...applicationData,
+          user_id: user.id,
+          created_at: new Date().toISOString()
+        };
+        
+        const newApplications = [newApp, ...applications];
+        
+        setApplications(newApplications);
+        setFilteredApplications(newApplications);
+        showNotification('Application added successfully!', 'success');
       }
       
       setIsModalOpen(false);
@@ -384,7 +349,14 @@ function App() {
           </>
         ) : (
           <>
-            <LandingPage onAuthSuccess={handleAuthSuccess} />
+            <AuthModal 
+              isOpen={true} 
+              onClose={() => {
+                // Don't allow closing - user must authenticate
+                showNotification('Please sign in or create an account to continue', 'info');
+              }} 
+              onAuthSuccess={handleAuthSuccess} 
+            />
           </>
         )}
         
