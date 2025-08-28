@@ -5,7 +5,7 @@ const LandingPage = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     fullName: '',
-    email: 'ibrahim.muhm25@gmail.com',
+    email: '',
     password: '',
     confirmPassword: ''
   });
@@ -98,7 +98,7 @@ const LandingPage = ({ onAuthSuccess }) => {
     setError('');
     setFormData({
       fullName: '',
-      email: 'ibrahim.muhm25@gmail.com',
+      email: '',
       password: '',
       confirmPassword: ''
     });
