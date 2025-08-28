@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '../config/supabase';
+import { registerUser, loginUser } from '../services/userService';
 
 const LandingPage = ({ onAuthSuccess }) => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,6 +12,8 @@ const LandingPage = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,20 +42,22 @@ const LandingPage = ({ onAuthSuccess }) => {
       console.log('Form submission:', { isLogin, formData });
       
       if (isLogin) {
-        // Real Supabase login
-        const { data, error } = await auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password
-        });
+        // Use proper login service
+        const user = await loginUser(formData.email, formData.password);
         
-        if (error) {
-          throw new Error(error.message);
+        // Check if email is verified
+        console.log('User email verification status:', user?.email_confirmed_at);
+        if (user && !user.email_confirmed_at) {
+          setShowVerificationMessage(true);
+          setVerificationEmail(formData.email);
+          setError('Please verify your email address before logging in. Check your inbox for a verification link.');
+          return;
         }
         
-        console.log('Login successful:', data);
+        console.log('Login successful:', user);
         onAuthSuccess();
       } else {
-        // Real Supabase signup
+        // Use proper registration service
         if (formData.password !== formData.confirmPassword) {
           throw new Error('Passwords do not match');
         }
@@ -62,28 +66,14 @@ const LandingPage = ({ onAuthSuccess }) => {
           throw new Error('Password must be at least 6 characters long');
         }
         
-        const { data, error } = await auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: {
-              full_name: formData.fullName
-            }
-          }
-        });
+        const result = await registerUser(formData.fullName || formData.email.split('@')[0], formData.email, formData.password);
+        console.log('Registration result:', result);
+        console.log('User email verification status after registration:', result?.email_confirmed_at);
         
-        if (error) {
-          throw new Error(error.message);
-        }
-        
-        console.log('Signup successful:', data);
-        
-        // Check if email confirmation is required
-        if (data.user && !data.user.email_confirmed_at) {
-          setError('Please check your email and confirm your account before signing in.');
-        } else {
-          onAuthSuccess();
-        }
+        // Show verification message
+        setShowVerificationMessage(true);
+        setVerificationEmail(formData.email);
+        setError('Account created! Please check your email for verification link before logging in.');
       }
     } catch (error) {
       console.error('Authentication error:', error);
@@ -96,6 +86,7 @@ const LandingPage = ({ onAuthSuccess }) => {
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setError('');
+    setShowVerificationMessage(false);
     setFormData({
       fullName: '',
       email: '',
@@ -147,8 +138,44 @@ const LandingPage = ({ onAuthSuccess }) => {
           </div>
         )}
 
+        {showVerificationMessage && (
+          <div className="verification-message">
+            <div style={{ 
+              background: 'rgba(255, 193, 7, 0.1)', 
+              border: '1px solid #ffc107', 
+              borderRadius: '8px', 
+              padding: '20px', 
+              marginBottom: '20px' 
+            }}>
+              <h3 style={{ color: '#ffc107', marginBottom: '10px' }}>📧 Email Verification Required</h3>
+              <p style={{ color: 'white', marginBottom: '15px' }}>
+                We've sent a verification link to <strong>{verificationEmail}</strong>
+              </p>
+              <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', marginBottom: '20px' }}>
+                Please check your email and click the verification link before logging in.
+              </p>
+              <button
+                onClick={() => {
+                  setShowVerificationMessage(false);
+                  setError('');
+                }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Back to Login
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Login Form */}
-        <form className={`login-form ${isLogin ? 'active' : ''}`} onSubmit={handleSubmit}>
+        <form className={`login-form ${isLogin && !showVerificationMessage ? 'active' : ''}`} onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="loginEmail">Email Address</label>
             <input
@@ -187,7 +214,7 @@ const LandingPage = ({ onAuthSuccess }) => {
         </form>
 
         {/* Signup Form */}
-        <form className={`signup-form ${!isLogin ? 'active' : ''}`} onSubmit={handleSubmit}>
+        <form className={`signup-form ${!isLogin && !showVerificationMessage ? 'active' : ''}`} onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="signupName">Full Name</label>
             <input

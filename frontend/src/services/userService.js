@@ -226,7 +226,14 @@ export const checkEmailVerification = async () => {
       return true;
     }
 
-    return false;
+    // Also check our users table
+    const { data: userData } = await supabase
+      .from('users')
+      .select('email_verified')
+      .eq('id', user.id)
+      .single();
+
+    return userData?.email_verified || false;
   } catch (error) {
     console.error('Error checking email verification:', error);
     return false;

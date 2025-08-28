@@ -19,6 +19,7 @@ import DataVisualization from './components/DataVisualization';
 import LandingPage from './components/LandingPage';
 import UserOnboarding from './components/UserOnboarding';
 import AuthModal from './components/AuthModal';
+import EmailVerification from './components/EmailVerification';
 // import TestAuth from './components/TestAuth';
 
 function App() {
@@ -36,14 +37,21 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Start as not authenticated
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
+
+  // Clear localStorage on app start to fix data persistence issues
+  useEffect(() => {
+    // Clear localStorage to start fresh
+    localStorage.removeItem('jobApplications');
+    localStorage.removeItem('onboardingCompleted');
+    console.log('LocalStorage cleared for fresh start');
+  }, []);
 
   useEffect(() => {
     // Load theme preference from localStorage
     const savedTheme = localStorage.getItem('theme') || 'default';
     setCurrentTheme(savedTheme);
-    
-    // Load applications from localStorage
-    loadApplications();
     
     // Check for existing auth session
     const checkAuth = async () => {
@@ -55,6 +63,8 @@ function App() {
         // Check email verification
         const isEmailVerified = await checkEmailVerification();
         if (!isEmailVerified) {
+          setCurrentUserEmail(user.email);
+          setShowEmailVerification(true);
           showNotification('Please verify your email address for full functionality', 'warning');
         }
         
@@ -64,12 +74,8 @@ function App() {
           setIsOnboardingOpen(true);
         }
         
-        // Try to sync any existing localStorage applications to database
-        try {
-          await syncUserApplications();
-        } catch (syncError) {
-          console.log('Sync failed, continuing with local data:', syncError);
-        }
+        // Load applications from database
+        await loadApplications();
       } else {
         setIsAuthenticated(false);
         console.log('No authenticated user found');
@@ -79,12 +85,22 @@ function App() {
     checkAuth();
     
     // Listen for auth state changes
-    const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.email);
       
       if (event === 'SIGNED_IN' && session?.user) {
         setIsAuthenticated(true);
-        showNotification('Welcome back!', 'success');
+        setCurrentUserEmail(session.user.email);
+        
+        // Check email verification for new sign-ins
+        const isEmailVerified = await checkEmailVerification();
+        if (!isEmailVerified) {
+          setShowEmailVerification(true);
+          showNotification('Please verify your email address for full functionality', 'warning');
+        } else {
+          showNotification('Welcome back!', 'success');
+        }
+        
         // Load applications when user signs in
         loadApplications();
       } else if (event === 'SIGNED_OUT') {
@@ -102,6 +118,16 @@ function App() {
     setShowAuthModal(false);
     showNotification('Welcome! You are now logged in.', 'success');
     loadApplications(); // Load applications after successful auth
+  };
+
+  const handleEmailVerificationComplete = () => {
+    setShowEmailVerification(false);
+    showNotification('Email verified successfully!', 'success');
+    loadApplications(); // Reload applications after verification
+  };
+
+  const handleEmailVerificationClose = () => {
+    setShowEmailVerification(false);
   };
 
   const handleLogout = async () => {
@@ -143,7 +169,7 @@ function App() {
         return;
       }
 
-      // First, try to load from database using email
+      // Load from database using email
       try {
         const dbApplications = await getApplicationsByEmail(user.email);
         if (dbApplications && dbApplications.length > 0) {
@@ -161,21 +187,16 @@ function App() {
           
           setApplications(formattedApplications);
           setFilteredApplications(formattedApplications);
+          console.log('Loaded applications from database:', formattedApplications.length);
           return;
         }
       } catch (dbError) {
-        console.log('No database applications found, checking localStorage...');
+        console.log('No database applications found:', dbError);
       }
 
-      // Fallback to localStorage
-      const savedApplications = localStorage.getItem('jobApplications');
-      const allData = savedApplications ? JSON.parse(savedApplications) : [];
-      
-      // Filter applications by current user
-      const userApplications = allData.filter(app => app.user_id === user.id);
-      
-      setApplications(userApplications);
-      setFilteredApplications(userApplications);
+      // If no database applications, start with empty array
+      setApplications([]);
+      setFilteredApplications([]);
     } catch (error) {
       console.error('Error loading applications:', error);
       setApplications([]);
@@ -209,18 +230,29 @@ function App() {
       }
 
       if (editingApplication) {
-        // Update existing application
-        const newApplications = [...applications];
-        const index = newApplications.findIndex(app => app.id === editingApplication.id);
-        if (index !== -1) {
-          newApplications[index] = { ...editingApplication, ...applicationData };
-        }
+        // Update existing application - for now, we'll recreate it
+        // TODO: Implement proper update functionality
+        const newApplications = applications.filter(app => app.id !== editingApplication.id);
         
-        // Save to localStorage for now (we'll implement database updates later)
-        localStorage.setItem('jobApplications', JSON.stringify(newApplications));
-        setApplications(newApplications);
-        setFilteredApplications(newApplications);
-        showNotification('Application updated successfully!', 'success');
+        // Add the updated application as new
+        try {
+          const appId = await addJobApplicationByEmail(user.email, applicationData);
+          
+          const updatedApp = {
+            id: appId,
+            ...applicationData,
+            user_id: user.id,
+            created_at: new Date().toISOString()
+          };
+          
+          const finalApplications = [updatedApp, ...newApplications];
+          setApplications(finalApplications);
+          setFilteredApplications(finalApplications);
+          showNotification('Application updated successfully!', 'success');
+        } catch (dbError) {
+          console.error('Database update failed:', dbError);
+          showNotification('Error updating application', 'error');
+        }
       } else {
         // Add new application to database
         try {
@@ -235,28 +267,12 @@ function App() {
           
           const newApplications = [newApp, ...applications];
           
-          // Also save to localStorage as backup
-          localStorage.setItem('jobApplications', JSON.stringify(newApplications));
-          
           setApplications(newApplications);
           setFilteredApplications(newApplications);
           showNotification('Application added successfully!', 'success');
         } catch (dbError) {
-          console.error('Database save failed, using localStorage:', dbError);
-          
-          // Fallback to localStorage
-          const newApp = {
-            id: Date.now().toString(),
-            ...applicationData,
-            user_id: user.id,
-            created_at: new Date().toISOString()
-          };
-          
-          const newApplications = [newApp, ...applications];
-          localStorage.setItem('jobApplications', JSON.stringify(newApplications));
-          setApplications(newApplications);
-          setFilteredApplications(newApplications);
-          showNotification('Application added (offline mode)!', 'success');
+          console.error('Database save failed:', dbError);
+          showNotification('Error saving application to database', 'error');
         }
       }
       
@@ -270,9 +286,6 @@ function App() {
   const handleConfirmDelete = () => {
     try {
       const newApplications = applications.filter(app => app.id !== editingApplication.id);
-      
-      // Save to localStorage
-      localStorage.setItem('jobApplications', JSON.stringify(newApplications));
       
       // Update state
       setApplications(newApplications);
@@ -317,6 +330,7 @@ function App() {
     if (preferences.theme) {
       setCurrentTheme(preferences.theme);
     }
+    localStorage.setItem('onboardingCompleted', 'true');
     showNotification('Welcome! Your preferences have been saved.', 'success');
   };
 
@@ -387,6 +401,20 @@ function App() {
             <LandingPage onAuthSuccess={handleAuthSuccess} />
           </>
         )}
+
+        {/* Auth Modal */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+
+        {/* Email Verification Modal */}
+        <EmailVerification
+          email={currentUserEmail}
+          onVerificationComplete={handleEmailVerificationComplete}
+          onClose={handleEmailVerificationClose}
+        />
         
         {notification && (
           <Notification

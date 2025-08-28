@@ -2,247 +2,182 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../config/supabase';
 import { sendEmailVerification, checkEmailVerification } from '../services/userService';
 
-const EmailVerification = ({ isOpen, onClose, onVerified }) => {
-  const [user, setUser] = useState(null);
+const EmailVerification = ({ email, onVerificationComplete, onClose }) => {
   const [isVerified, setIsVerified] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
-  const [verificationToken, setVerificationToken] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (isOpen) {
-      loadUserData();
-    }
-  }, [isOpen]);
+    // Check verification status when component mounts
+    checkVerificationStatus();
+  }, [email]);
 
-  const loadUserData = async () => {
+  const checkVerificationStatus = async () => {
+    setIsChecking(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUser(user);
-        const verified = await checkEmailVerification();
-        setIsVerified(verified);
+      const verified = await checkEmailVerification();
+      setIsVerified(verified);
+      if (verified) {
+        setMessage('Email verified successfully!');
+        setTimeout(() => {
+          onVerificationComplete();
+        }, 2000);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
-    }
-  };
-
-  const handleSendVerification = async () => {
-    if (!user?.email) {
-      showMessage('No email address found', 'error');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await sendEmailVerification(user.email);
-      showMessage('Verification email sent! Check your inbox.', 'success');
-    } catch (error) {
-      showMessage(error.message, 'error');
+      console.error('Error checking verification status:', error);
     } finally {
-      setLoading(false);
+      setIsChecking(false);
     }
   };
 
-  const handleVerifyToken = async (e) => {
-    e.preventDefault();
-    
-    if (!verificationToken.trim()) {
-      showMessage('Please enter the verification token', 'error');
-      return;
-    }
-
+  const handleResendVerification = async () => {
+    setIsResending(true);
     try {
-      setLoading(true);
-      
-      // Try to verify the token
-      const { data, error } = await supabase.auth.verifyOtp({
-        token: verificationToken,
-        type: 'signup'
-      });
-      
-      if (error) throw error;
-      
-      setIsVerified(true);
-      showMessage('Email verified successfully!', 'success');
-      
-      setTimeout(() => {
-        onVerified();
-        onClose();
-      }, 2000);
+      await sendEmailVerification(email);
+      setMessage('Verification email sent! Please check your inbox.');
     } catch (error) {
-      showMessage('Invalid verification token. Please try again.', 'error');
+      setMessage('Error sending verification email: ' + error.message);
     } finally {
-      setLoading(false);
+      setIsResending(false);
     }
   };
 
-  const handleRefreshVerification = async () => {
-    await loadUserData();
+  const handleRefresh = () => {
+    checkVerificationStatus();
   };
 
-  const showMessage = (text, type) => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage({ text: '', type: '' }), 5000);
-  };
-
-  if (!isOpen) return null;
+  if (isVerified) {
+    return (
+      <div className="modal show">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h2>Email Verified!</h2>
+            <span className="close" onClick={onClose}>&times;</span>
+          </div>
+          <div style={{ padding: '20px', textAlign: 'center' }}>
+            <div style={{ 
+              background: 'rgba(76, 175, 80, 0.1)', 
+              border: '1px solid #4caf50', 
+              borderRadius: '8px', 
+              padding: '20px', 
+              marginBottom: '20px' 
+            }}>
+              <h3 style={{ color: '#4caf50', marginBottom: '10px' }}>✅ Email Verified Successfully</h3>
+              <p style={{ color: 'white', marginBottom: '15px' }}>
+                Your email <strong>{email}</strong> has been verified.
+              </p>
+              <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px' }}>
+                You can now access all features of the application.
+              </p>
+            </div>
+            <button
+              onClick={onVerificationComplete}
+              style={{
+                background: '#4caf50',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              Continue to App
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal show">
-      <div className="modal-content" style={{ maxWidth: '500px' }}>
+      <div className="modal-content">
         <div className="modal-header">
-          <h2>Email Verification</h2>
+          <h2>Email Verification Required</h2>
           <span className="close" onClick={onClose}>&times;</span>
         </div>
-
-        {message.text && (
-          <div className={`message ${message.type}`} style={{
-            padding: '12px',
-            marginBottom: '20px',
-            borderRadius: '8px',
-            background: message.type === 'success' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
-            border: `1px solid ${message.type === 'success' ? '#4caf50' : '#f44336'}`,
-            color: message.type === 'success' ? '#4caf50' : '#f44336'
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <div style={{ 
+            background: 'rgba(255, 193, 7, 0.1)', 
+            border: '1px solid #ffc107', 
+            borderRadius: '8px', 
+            padding: '20px', 
+            marginBottom: '20px' 
           }}>
-            {message.text}
-          </div>
-        )}
-
-        <div style={{ padding: '2rem' }}>
-          {isVerified ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ 
-                fontSize: '48px', 
-                color: '#4caf50', 
-                marginBottom: '20px' 
+            <h3 style={{ color: '#ffc107', marginBottom: '10px' }}>📧 Verify Your Email Address</h3>
+            <p style={{ color: 'white', marginBottom: '15px' }}>
+              We've sent a verification link to <strong>{email}</strong>
+            </p>
+            <p style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', marginBottom: '20px' }}>
+              Please check your email and click the verification link to continue.
+            </p>
+            
+            {message && (
+              <div style={{
+                background: message.includes('Error') ? 'rgba(244, 67, 54, 0.1)' : 'rgba(76, 175, 80, 0.1)',
+                border: message.includes('Error') ? '1px solid #f44336' : '1px solid #4caf50',
+                borderRadius: '5px',
+                padding: '10px',
+                marginBottom: '15px',
+                color: message.includes('Error') ? '#f44336' : '#4caf50'
               }}>
-                <i className="fas fa-check-circle"></i>
+                {message}
               </div>
-              <h3 style={{ color: '#4caf50', marginBottom: '15px' }}>
-                Email Verified!
-              </h3>
-              <p style={{ color: 'rgba(255, 255, 255, 0.8)', marginBottom: '20px' }}>
-                Your email address <strong>{user?.email}</strong> has been successfully verified.
-                You now have access to all features.
-              </p>
-              <button 
-                className="btn btn-primary"
-                onClick={() => {
-                  onVerified();
-                  onClose();
+            )}
+            
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleRefresh}
+                disabled={isChecking}
+                style={{
+                  background: '#2196f3',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: isChecking ? 'not-allowed' : 'pointer',
+                  opacity: isChecking ? 0.6 : 1
                 }}
               >
-                Continue
+                {isChecking ? 'Checking...' : 'Check Verification'}
+              </button>
+              
+              <button
+                onClick={handleResendVerification}
+                disabled={isResending}
+                style={{
+                  background: '#d2691e',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: isResending ? 'not-allowed' : 'pointer',
+                  opacity: isResending ? 0.6 : 1
+                }}
+              >
+                {isResending ? 'Sending...' : 'Resend Email'}
               </button>
             </div>
-          ) : (
-            <>
-              <div style={{ 
-                background: 'rgba(255, 193, 7, 0.1)', 
-                border: '1px solid #ffc107', 
-                borderRadius: '8px', 
-                padding: '15px', 
-                marginBottom: '20px' 
-              }}>
-                <div style={{ color: '#ffc107', marginBottom: '10px' }}>
-                  <i className="fas fa-info-circle"></i>
-                  <strong> Email Verification Required</strong>
-                </div>
-                <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '14px', margin: 0 }}>
-                  Please verify your email address <strong>{user?.email}</strong> to access all features 
-                  and ensure your job applications are properly saved.
-                </p>
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ color: '#d2691e', marginBottom: '10px' }}>
-                  Step 1: Send Verification Email
-                </h4>
-                <button 
-                  className="btn btn-primary"
-                  onClick={handleSendVerification}
-                  disabled={loading}
-                  style={{ width: '100%' }}
-                >
-                  {loading ? 'Sending...' : 'Send Verification Email'}
-                </button>
-              </div>
-
-              <div style={{ 
-                borderTop: '1px solid rgba(255, 255, 255, 0.1)', 
-                paddingTop: '20px' 
-              }}>
-                <h4 style={{ color: '#d2691e', marginBottom: '10px' }}>
-                  Step 2: Enter Verification Token
-                </h4>
-                <form onSubmit={handleVerifyToken}>
-                  <div className="form-group">
-                    <label>Verification Token</label>
-                    <input
-                      type="text"
-                      value={verificationToken}
-                      onChange={(e) => setVerificationToken(e.target.value)}
-                      placeholder="Enter the token from your email"
-                      required
-                    />
-                    <small style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '12px' }}>
-                      Check your email for the verification token
-                    </small>
-                  </div>
-                  
-                  <div className="form-actions">
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary" 
-                      onClick={handleRefreshVerification}
-                      disabled={loading}
-                    >
-                      Refresh Status
-                    </button>
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary" 
-                      disabled={loading}
-                    >
-                      {loading ? 'Verifying...' : 'Verify Email'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              <div style={{ 
-                background: 'rgba(33, 150, 243, 0.1)', 
-                border: '1px solid #2196f3', 
-                borderRadius: '8px', 
-                padding: '15px', 
-                marginTop: '20px' 
-              }}>
-                <div style={{ color: '#2196f3', marginBottom: '10px' }}>
-                  <i className="fas fa-lightbulb"></i>
-                  <strong> Need Help?</strong>
-                </div>
-                <ul style={{ 
-                  color: 'rgba(255, 255, 255, 0.8)', 
-                  fontSize: '14px', 
-                  margin: 0, 
-                  paddingLeft: '20px' 
-                }}>
-                  <li>Check your spam/junk folder</li>
-                  <li>Make sure you entered the correct email address</li>
-                  <li>Click "Send Verification Email" again if needed</li>
-                  <li>Contact support if you continue having issues</li>
-                </ul>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="form-actions" style={{ padding: '0 2rem 2rem 2rem' }}>
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
-            Close
-          </button>
+          </div>
+          
+          <div style={{ marginTop: '20px' }}>
+            <p style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: '12px', marginBottom: '10px' }}>
+              Didn't receive the email?
+            </p>
+            <ul style={{ 
+              color: 'rgba(255, 255, 255, 0.6)', 
+              fontSize: '12px', 
+              textAlign: 'left',
+              display: 'inline-block',
+              margin: '0 auto'
+            }}>
+              <li>Check your spam/junk folder</li>
+              <li>Make sure the email address is correct</li>
+              <li>Wait a few minutes and try again</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
