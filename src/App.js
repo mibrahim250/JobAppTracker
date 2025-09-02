@@ -49,7 +49,8 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange }) {
   const themes = [
     { id: 'fall', name: '🍂 Fall Vibes', description: 'Warm autumn colors with falling leaves' },
     { id: 'black', name: '⚫ Clean Black', description: 'Minimalist dark theme for focus' },
-    { id: 'winter', name: '❄️ Winter Wonderland', description: 'Cool blues with falling snow' }
+    { id: 'winter', name: '❄️ Winter Wonderland', description: 'Cool blues with falling snow' },
+    { id: 'vintage', name: '☕ Vintage Cafe', description: 'Old cafe aesthetic with warm browns and sepia tones' }
   ];
 
   return (
@@ -94,8 +95,9 @@ export default function App() {
   const [msg, setMsg] = useState('');
   
   // Theme state
-  const [theme, setTheme] = useState('fall');
+  const [theme, setTheme] = useState('black');
   const [showSettings, setShowSettings] = useState(false);
+  const [expandedView, setExpandedView] = useState(false);
   
   // Job application states
   const [applications, setApplications] = useState([]);
@@ -128,7 +130,7 @@ export default function App() {
   // Load theme from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('jobTrackerTheme');
-    if (savedTheme && ['fall', 'black', 'winter'].includes(savedTheme)) {
+    if (savedTheme && ['fall', 'black', 'winter', 'vintage'].includes(savedTheme)) {
       setTheme(savedTheme);
     }
   }, []);
@@ -438,7 +440,7 @@ export default function App() {
         <FallingLeaves theme={theme} />
         <div className="App">
           <header className="App-header">
-            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : '🍂'} Job Application Tracker</h1>
+            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'vintage' ? '☕' : '🍂'} Job Application Tracker</h1>
             <p>Track your career journey with style</p>
           </header>
 
@@ -490,7 +492,7 @@ export default function App() {
       <FallingLeaves theme={theme} />
       <div className="App">
         <header className="App-header">
-          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : '🍂'} Job Application Tracker</h1>
+          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'vintage' ? '☕' : '🍂'} Job Application Tracker</h1>
           <div className="row">
             <p>Welcome back, {user.email}</p>
             <div className="row" style={{ gap: '12px' }}>
@@ -627,6 +629,17 @@ export default function App() {
           </div>
         )}
 
+        {/* View Toggle Button */}
+        <div className="view-toggle-container">
+          <button
+            onClick={() => setExpandedView(!expandedView)}
+            className="btn-secondary"
+            style={{ fontSize: '14px', padding: '8px 16px' }}
+          >
+            {expandedView ? '📋 Compact View' : '📖 Expanded View'}
+          </button>
+        </div>
+
         {(showForm || editingApp) && (
           <div className="card" style={{ marginBottom: '24px' }}>
             <div className="form-header">
@@ -751,65 +764,102 @@ export default function App() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {filteredApplications.map(app => (
-              <div key={app.id} className="card application-card">
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <h3>{app.role_title}</h3>
-                    <p className="company">{app.company}</p>
-                    {app.location && (
-                      <p className="meta">📍 {app.location}</p>
-                    )}
-                    {app.source && (
-                      <p className="meta">📋 Applied via {app.source}</p>
-                    )}
-                    {app.applied_at && (
-                      <p className="meta">📅 Applied {new Date(app.applied_at).toLocaleDateString()}</p>
-                    )}
-                    {app.notes && (
-                      <div className="notes">{app.notes}</div>
-                    )}
-                    <div className="row" style={{ gap: '12px', marginTop: '16px' }}>
+              <div key={app.id} className={`card application-card ${expandedView ? 'expanded' : 'compact'}`}>
+                {expandedView ? (
+                  // Expanded View - Full Details
+                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3>{app.role_title}</h3>
+                      <p className="company">{app.company}</p>
+                      {app.location && (
+                        <p className="meta">📍 {app.location}</p>
+                      )}
+                      {app.source && (
+                        <p className="meta">📋 Applied via {app.source}</p>
+                      )}
+                      {app.applied_at && (
+                        <p className="meta">📅 Applied {new Date(app.applied_at).toLocaleDateString()}</p>
+                      )}
+                      {app.notes && (
+                        <div className="notes">{app.notes}</div>
+                      )}
+                      <div className="row" style={{ gap: '12px', marginTop: '16px' }}>
+                        <span 
+                          className={`status-badge status-${app.status}`}
+                        >
+                          {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                        </span>
+                        {app.link && (
+                          <a 
+                            href={app.link} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ 
+                              fontSize: '14px', 
+                              color: 'var(--accent-primary)',
+                              textDecoration: 'none',
+                              fontWeight: '600'
+                            }}
+                          >
+                            🔗 View Application
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div className="row" style={{ gap: '8px' }}>
+                      <button 
+                        onClick={() => handleEdit(app)}
+                        disabled={editingApp}
+                        className="btn-secondary"
+                        style={{ fontSize: '12px', padding: '8px 12px' }}
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteApplication(app.id)}
+                        disabled={busy}
+                        className="btn-danger"
+                        style={{ fontSize: '12px', padding: '8px 12px' }}
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // Compact View - Just Job Name and Status
+                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}>{app.role_title}</h3>
+                      <p className="company" style={{ margin: '0', fontSize: '0.9rem' }}>{app.company}</p>
+                    </div>
+                    <div className="row" style={{ gap: '12px', alignItems: 'center' }}>
                       <span 
                         className={`status-badge status-${app.status}`}
+                        style={{ fontSize: '11px', padding: '4px 8px' }}
                       >
                         {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                       </span>
-                      {app.link && (
-                        <a 
-                          href={app.link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={{ 
-                            fontSize: '14px', 
-                            color: 'var(--accent-primary)',
-                            textDecoration: 'none',
-                            fontWeight: '600'
-                          }}
+                      <div className="row" style={{ gap: '6px' }}>
+                        <button 
+                          onClick={() => handleEdit(app)}
+                          disabled={editingApp}
+                          className="btn-secondary"
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
                         >
-                          🔗 View Application
-                        </a>
-                      )}
+                          ✏️
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteApplication(app.id)}
+                          disabled={busy}
+                          className="btn-danger"
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="row" style={{ gap: '8px' }}>
-                    <button 
-                      onClick={() => handleEdit(app)}
-                      disabled={editingApp}
-                      className="btn-secondary"
-                      style={{ fontSize: '12px', padding: '8px 12px' }}
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteApplication(app.id)}
-                      disabled={busy}
-                      className="btn-danger"
-                      style={{ fontSize: '12px', padding: '8px 12px' }}
-                    >
-                      🗑️ Delete
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
             ))}
           </div>
