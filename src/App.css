@@ -1,0 +1,185 @@
+:root { 
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; 
+}
+
+body { 
+  margin: 0; 
+  background: #0b0c10; 
+  color: #e8f0fe; 
+}
+
+.App { 
+  padding: 24px; 
+  max-width: 900px; 
+  margin: 0 auto; 
+}
+
+.App-header { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
+}
+
+input, button, select, textarea { 
+  font: inherit; 
+  padding: 10px 12px; 
+  border-radius: 10px; 
+  border: 1px solid #2b2f3a; 
+  background: #12141a; 
+  color: #e8f0fe; 
+}
+
+button { 
+  cursor: pointer; 
+  transition: all 0.2s ease;
+}
+
+button:hover:not(:disabled) {
+  background: #1a1d26;
+  border-color: #3a3f4a;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card { 
+  background: #11131a; 
+  border: 1px solid #2b2f3a; 
+  border-radius: 16px; 
+  padding: 16px; 
+}
+
+.row { 
+  display: flex; 
+  gap: 12px; 
+  flex-wrap: wrap; 
+  align-items: center; 
+}
+
+form.row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+form.row input,
+form.row select,
+form.row textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+form.row .row {
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+form.row .row button {
+  flex: 1;
+}
+
+/* Job application form specific styles */
+.job-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.job-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.job-form input,
+.job-form select,
+.job-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.job-form textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Status badge colors */
+.status-wishlist { background-color: #6366f1; }
+.status-applied { background-color: #f59e0b; }
+.status-oa { background-color: #8b5cf6; }
+.status-interview { background-color: #06b6d4; }
+.status-offer { background-color: #10b981; }
+.status-rejected { background-color: #ef4444; }
+.status-ghosted { background-color: #6b7280; }
+.status-accepted { background-color: #059669; }
+.status-declined { background-color: #dc2626; }
+
+/* Application card improvements */
+.application-card {
+  transition: all 0.2s ease;
+}
+
+.application-card:hover {
+  border-color: #3a3f4a;
+  transform: translateY(-1px);
+}
+
+.application-card h3 {
+  color: #e8f0fe;
+  margin: 0 0 8px 0;
+}
+
+.application-card .company {
+  font-weight: 600;
+  color: #fbbf24;
+}
+
+.application-card .meta {
+  font-size: 14px;
+  opacity: 0.7;
+  margin: 4px 0;
+}
+
+.application-card .notes {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin: 8px 0;
+  font-style: italic;
+}
+
+/* Button improvements */
+.btn-primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.btn-danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.btn-secondary {
+  background: #6b7280;
+  border-color: #6b7280;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #4b5563;
+  border-color: #4b5563;
+}

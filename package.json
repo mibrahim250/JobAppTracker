@@ -1,14 +1,30 @@
 {
-  "name": "job-app-tracker",
+  "name": "job-application-tracker",
   "version": "1.0.0",
-  "description": "Job Application Tracker with React frontend and Spring Boot backend",
-  "private": true,
-  "workspaces": [
-    "frontend"
-  ],
+  "description": "Simple job application tracker with Supabase",
+  "main": "index.js",
   "scripts": {
-    "build": "cd frontend && npm run build",
-    "start": "cd frontend && npm start",
-    "install-deps": "cd frontend && npm install"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }

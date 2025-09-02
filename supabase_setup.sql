@@ -1,74 +1,40 @@
--- Create Users Table
-CREATE TABLE users (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  username VARCHAR(50) UNIQUE NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+-- =====================================================
+-- BASIC SUPABASE SETUP FOR JOB APPLICATION TRACKER
+-- =====================================================
+-- Run this in your Supabase SQL editor
+
+-- 1. Create job_applications table
+CREATE TABLE IF NOT EXISTS public.job_applications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    company VARCHAR(200) NOT NULL,
+    role VARCHAR(200) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    applied_date DATE,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create Job Applications Table
-CREATE TABLE job_applications (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  company VARCHAR(200) NOT NULL,
-  role VARCHAR(200) NOT NULL,
-  status VARCHAR(50) NOT NULL,
-  applied_date DATE,
-  notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- 2. Enable Row Level Security
+ALTER TABLE public.job_applications ENABLE ROW LEVEL SECURITY;
 
--- Enable Row Level Security (RLS) for Users Table
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+-- 3. Create RLS policies
+CREATE POLICY "Users can view own applications" ON public.job_applications
+    FOR SELECT USING (auth.uid() = user_id);
 
--- Users can only see their own data
-CREATE POLICY "Users can view own profile" ON users
-  FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can insert own applications" ON public.job_applications
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Users can update their own data
-CREATE POLICY "Users can update own profile" ON users
-  FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can update own applications" ON public.job_applications
+    FOR UPDATE USING (auth.uid() = user_id);
 
--- Allow users to insert their own profile (this is the key fix)
-CREATE POLICY "Users can insert own profile" ON users
-  FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can delete own applications" ON public.job_applications
+    FOR DELETE USING (auth.uid() = user_id);
 
--- Enable Row Level Security (RLS) for Job Applications Table
-ALTER TABLE job_applications ENABLE ROW LEVEL SECURITY;
+-- 4. Grant permissions
+GRANT ALL ON public.job_applications TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE public.job_applications_id_seq TO authenticated;
 
--- Users can only see their own applications
-CREATE POLICY "Users can view own applications" ON job_applications
-  FOR SELECT USING (auth.uid() = user_id);
-
--- Users can insert their own applications
-CREATE POLICY "Users can insert own applications" ON job_applications
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- Users can update their own applications
-CREATE POLICY "Users can update own applications" ON job_applications
-  FOR UPDATE USING (auth.uid() = user_id);
-
--- Users can delete their own applications
-CREATE POLICY "Users can delete own applications" ON job_applications
-  FOR DELETE USING (auth.uid() = user_id);
-
--- Create a function to handle new user creation
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
-BEGIN
-  INSERT INTO public.users (id, username, email)
-  VALUES (
-    new.id,
-    COALESCE(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
-    new.email
-  );
-  RETURN new;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Create a trigger to automatically create user profile when auth.users is created
-CREATE OR REPLACE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+-- 5. Verification
+SELECT 'Setup complete! Your job application tracker is ready.' as status;
