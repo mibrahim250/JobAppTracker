@@ -3,7 +3,29 @@ import { supabase } from './config/supabase';
 import './App.css';
 
 // Animated Falling Leaves Component
-function FallingLeaves() {
+function FallingLeaves({ theme }) {
+  if (theme === 'winter') {
+    return (
+      <div className="snow-container">
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+        <div className="snowflake"></div>
+      </div>
+    );
+  }
+  
+  if (theme === 'black') {
+    return null; // No background animation for black theme
+  }
+  
+  // Fall theme (default)
   return (
     <div className="leaves-container">
       <div className="leaf"></div>
@@ -20,6 +42,49 @@ function FallingLeaves() {
   );
 }
 
+// Settings Modal Component
+function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange }) {
+  if (!isOpen) return null;
+
+  const themes = [
+    { id: 'fall', name: '🍂 Fall Vibes', description: 'Warm autumn colors with falling leaves' },
+    { id: 'black', name: '⚫ Clean Black', description: 'Minimalist dark theme for focus' },
+    { id: 'winter', name: '❄️ Winter Wonderland', description: 'Cool blues with falling snow' }
+  ];
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>⚙️ Settings</h3>
+          <button onClick={onClose} className="close-btn">×</button>
+        </div>
+        <div className="modal-body">
+          <div className="theme-section">
+            <h4>Choose Theme</h4>
+            <div className="theme-options">
+              {themes.map(theme => (
+                <div 
+                  key={theme.id} 
+                  className={`theme-option ${currentTheme === theme.id ? 'selected' : ''}`}
+                  onClick={() => onThemeChange(theme.id)}
+                >
+                  <div className={`theme-preview theme-preview-${theme.id}`}></div>
+                  <div className="theme-info">
+                    <h5>{theme.name}</h5>
+                    <p>{theme.description}</p>
+                  </div>
+                  {currentTheme === theme.id && <span className="checkmark">✓</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [mode, setMode] = useState('signin');
@@ -27,6 +92,10 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  
+  // Theme state
+  const [theme, setTheme] = useState('fall');
+  const [showSettings, setShowSettings] = useState(false);
   
   // Job application states
   const [applications, setApplications] = useState([]);
@@ -45,6 +114,30 @@ export default function App() {
     applied_at: '',
     notes: ''
   });
+
+  // Filters state
+  const [filters, setFilters] = useState({
+    searchTerm: '',
+    dateRange: 'all',
+    customStartDate: '',
+    customEndDate: '',
+    statuses: [],
+    isExpanded: false
+  });
+
+  // Load theme from localStorage on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('jobTrackerTheme');
+    if (savedTheme && ['fall', 'black', 'winter'].includes(savedTheme)) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  // Apply theme to body
+  useEffect(() => {
+    document.body.className = `theme-${theme}`;
+    localStorage.setItem('jobTrackerTheme', theme);
+  }, [theme]);
 
   // Load existing session on mount + subscribe to changes
   useEffect(() => {
@@ -260,13 +353,92 @@ export default function App() {
     });
   }
 
+  function toggleStatusFilter(status) {
+    setFilters(prev => ({
+      ...prev,
+      statuses: prev.statuses.includes(status)
+        ? prev.statuses.filter(s => s !== status)
+        : [...prev.statuses, status]
+    }));
+  }
+
+  function clearFilters() {
+    setFilters({
+      searchTerm: '',
+      dateRange: 'all',
+      customStartDate: '',
+      customEndDate: '',
+      statuses: [],
+      isExpanded: false
+    });
+  }
+
+  const filteredApplications = applications.filter(app => {
+    // Apply search filter
+    const matchesSearchTerm = !filters.searchTerm || 
+      app.company.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      app.role_title.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      (app.location && app.location.toLowerCase().includes(filters.searchTerm.toLowerCase())) ||
+      (app.notes && app.notes.toLowerCase().includes(filters.searchTerm.toLowerCase()));
+
+    // Apply date filter
+    let matchesDateRange = true;
+    if (filters.dateRange !== 'all' && app.applied_at) {
+      const now = new Date();
+      const appDate = new Date(app.applied_at);
+      let startDate = new Date();
+      
+      switch (filters.dateRange) {
+        case 'today':
+          startDate.setHours(0, 0, 0, 0);
+          matchesDateRange = appDate >= startDate;
+          break;
+        case 'week':
+          startDate.setDate(now.getDate() - 7);
+          matchesDateRange = appDate >= startDate;
+          break;
+        case 'month':
+          startDate.setMonth(now.getMonth() - 1);
+          matchesDateRange = appDate >= startDate;
+          break;
+        case '3months':
+          startDate.setMonth(now.getMonth() - 3);
+          matchesDateRange = appDate >= startDate;
+          break;
+        case '6months':
+          startDate.setMonth(now.getMonth() - 6);
+          matchesDateRange = appDate >= startDate;
+          break;
+        case 'year':
+          startDate.setFullYear(now.getFullYear() - 1);
+          matchesDateRange = appDate >= startDate;
+          break;
+        case 'custom':
+          if (filters.customStartDate) {
+            const start = new Date(filters.customStartDate);
+            matchesDateRange = appDate >= start;
+          }
+          if (filters.customEndDate) {
+            const end = new Date(filters.customEndDate);
+            matchesDateRange = matchesDateRange && appDate <= end;
+          }
+          break;
+      }
+    }
+
+    // Apply status filter
+    const matchesStatuses = filters.statuses.length === 0 || filters.statuses.includes(app.status);
+
+    return matchesSearchTerm && matchesDateRange && matchesStatuses;
+  });
+
   if (!user) {
     return (
       <>
-        <FallingLeaves />
+        <FallingLeaves theme={theme} />
         <div className="App">
           <header className="App-header">
-            <h1>🍂 Job Application Tracker</h1>
+            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : '🍂'} Job Application Tracker</h1>
             <p>Track your career journey with style</p>
           </header>
 
@@ -315,15 +487,24 @@ export default function App() {
 
   return (
     <>
-      <FallingLeaves />
+      <FallingLeaves theme={theme} />
       <div className="App">
         <header className="App-header">
-          <h1>🍂 Job Application Tracker</h1>
+          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : '🍂'} Job Application Tracker</h1>
           <div className="row">
             <p>Welcome back, {user.email}</p>
-            <button onClick={handleSignOut} disabled={busy} className="btn-secondary">
-              Sign out
-            </button>
+            <div className="row" style={{ gap: '12px' }}>
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="btn-secondary"
+                style={{ padding: '8px 16px', fontSize: '14px' }}
+              >
+                ⚙️ Settings
+              </button>
+              <button onClick={handleSignOut} disabled={busy} className="btn-secondary">
+                Sign out
+              </button>
+            </div>
           </div>
         </header>
 
@@ -334,7 +515,7 @@ export default function App() {
         )}
 
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ margin: 0, color: '#2d3748' }}>Your Applications ({applications.length})</h2>
+          <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Your Applications ({applications.length})</h2>
           <button 
             onClick={() => setShowForm(true)}
             disabled={showForm || editingApp}
@@ -353,7 +534,7 @@ export default function App() {
             </div>
             <form onSubmit={editingApp ? handleUpdateApplication : handleSubmitApplication} className="job-form">
               <div className="form-group">
-                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Company</label>
+                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Company</label>
                 <input
                   type="text"
                   placeholder="Company name"
@@ -363,7 +544,7 @@ export default function App() {
                 />
               </div>
               <div className="form-group">
-                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Role</label>
+                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Role</label>
                 <input
                   type="text"
                   placeholder="Role/Position title"
@@ -373,7 +554,7 @@ export default function App() {
                 />
               </div>
               <div className="form-group">
-                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Status</label>
+                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Status</label>
                 <select
                   value={formData.status}
                   onChange={e => setFormData({...formData, status: e.target.value})}
@@ -391,7 +572,7 @@ export default function App() {
                 </select>
               </div>
               <div className="form-group">
-                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Location</label>
+                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Location</label>
                 <input
                   type="text"
                   placeholder="Location (optional)"
@@ -400,7 +581,7 @@ export default function App() {
                 />
               </div>
               <div className="form-group">
-                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Source</label>
+                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Source</label>
                 <input
                   type="text"
                   placeholder="Source (e.g., LinkedIn, Indeed)"
@@ -409,7 +590,7 @@ export default function App() {
                 />
               </div>
               <div className="form-group">
-                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Application Link</label>
+                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Application Link</label>
                 <input
                   type="url"
                   placeholder="Application link (optional)"
@@ -418,7 +599,7 @@ export default function App() {
                 />
               </div>
               <div className="form-group">
-                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Applied Date</label>
+                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Applied Date</label>
                 <input
                   type="date"
                   placeholder="Applied date"
@@ -427,7 +608,7 @@ export default function App() {
                 />
               </div>
               <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Notes</label>
+                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Notes</label>
                 <textarea
                   placeholder="Add any notes about this application..."
                   value={formData.notes}
@@ -461,7 +642,7 @@ export default function App() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {applications.map(app => (
+            {filteredApplications.map(app => (
               <div key={app.id} className="card application-card">
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
@@ -492,7 +673,7 @@ export default function App() {
                           rel="noopener noreferrer"
                           style={{ 
                             fontSize: '14px', 
-                            color: '#ff8c42',
+                            color: 'var(--accent-primary)',
                             textDecoration: 'none',
                             fontWeight: '600'
                           }}
@@ -525,6 +706,13 @@ export default function App() {
             ))}
           </div>
         )}
+        
+        <SettingsModal 
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          currentTheme={theme}
+          onThemeChange={setTheme}
+        />
       </div>
     </>
   );
