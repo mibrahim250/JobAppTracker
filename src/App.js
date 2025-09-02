@@ -2,6 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './config/supabase';
 import './App.css';
 
+// Animated Falling Leaves Component
+function FallingLeaves() {
+  return (
+    <div className="leaves-container">
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+      <div className="leaf"></div>
+    </div>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [mode, setMode] = useState('signin');
@@ -78,9 +96,28 @@ export default function App() {
   async function handleSignOut() {
     setBusy(true);
     setMsg('');
-    await supabase.auth.signOut();
-    setApplications([]);
-    setBusy(false);
+    try {
+      await supabase.auth.signOut();
+      // Reset all state immediately
+      setUser(null);
+      setApplications([]);
+      setShowForm(false);
+      setEditingApp(null);
+      setFormData({
+        company: '',
+        role_title: '',
+        status: 'applied',
+        location: '',
+        source: '',
+        link: '',
+        applied_at: '',
+        notes: ''
+      });
+    } catch (err) {
+      console.error('Sign out error:', err);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function loadApplications() {
@@ -223,246 +260,273 @@ export default function App() {
     });
   }
 
-  const statusColors = {
-    'wishlist': '#6366f1',
-    'applied': '#f59e0b',
-    'oa': '#8b5cf6',
-    'interview': '#06b6d4',
-    'offer': '#10b981',
-    'rejected': '#ef4444',
-    'ghosted': '#6b7280',
-    'accepted': '#059669',
-    'declined': '#dc2626'
-  };
-
   if (!user) {
     return (
-      <div className="App">
-        <header className="App-header">
-          <h1>Job Application Tracker</h1>
-          <p className="row">Supabase Auth • React 18</p>
-        </header>
+      <>
+        <FallingLeaves />
+        <div className="App">
+          <header className="App-header">
+            <h1>🍂 Job Application Tracker</h1>
+            <p>Track your career journey with style</p>
+          </header>
 
-        <div className="card" style={{ maxWidth: 420 }}>
-          <h3>{mode === 'signup' ? 'Create account' : 'Sign in'}</h3>
-          <form onSubmit={handleAuth} className="row" style={{ flexDirection: 'column' }}>
-            <input
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-            <input
-              type="password"
-              placeholder="Password (min 6 chars)"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            />
-            <div className="row">
-              <button disabled={busy} type="submit">
-                {busy ? 'Please wait…' : (mode === 'signup' ? 'Sign up' : 'Sign in')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode(m => (m === 'signup' ? 'signin' : 'signup'))}
-                disabled={busy}
-              >
-                {mode === 'signup' ? 'Have an account? Sign in' : 'New here? Sign up'}
-              </button>
+          <div className="card" style={{ maxWidth: 420, margin: '0 auto' }}>
+            <div className="form-header">
+              <h3>{mode === 'signup' ? 'Create Your Account' : 'Welcome Back'}</h3>
+              <p>{mode === 'signup' ? 'Start tracking your job applications today' : 'Sign in to continue'}</p>
             </div>
-          </form>
-          {msg && <p style={{ opacity: 0.85 }}>{msg}</p>}
+            <form onSubmit={handleAuth} className="row">
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+              <input
+                type="password"
+                placeholder="Password (min 6 chars)"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              />
+              <div className="row">
+                <button disabled={busy} type="submit" className="btn-primary">
+                  {busy ? 'Please wait…' : (mode === 'signup' ? 'Create Account' : 'Sign In')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode(m => (m === 'signup' ? 'signin' : 'signup'))}
+                  disabled={busy}
+                  className="btn-secondary"
+                >
+                  {mode === 'signup' ? 'Already have an account?' : 'New here?'}
+                </button>
+              </div>
+            </form>
+            {msg && <p style={{ opacity: 0.85, textAlign: 'center', marginTop: '16px' }}>{msg}</p>}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Job Application Tracker</h1>
-        <div className="row">
-          <p>Welcome back, {user.email}</p>
-          <button onClick={handleSignOut} disabled={busy}>
-            Sign out
-          </button>
-        </div>
-      </header>
-
-      {msg && (
-        <div className="card" style={{ marginBottom: '16px' }}>
-          <p style={{ margin: 0, opacity: 0.85 }}>{msg}</p>
-        </div>
-      )}
-
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2>Your Applications ({applications.length})</h2>
-        <button 
-          onClick={() => setShowForm(true)}
-          disabled={showForm || editingApp}
-        >
-          + Add Application
-        </button>
-      </div>
-
-      {(showForm || editingApp) && (
-        <div className="card" style={{ marginBottom: '16px' }}>
-          <h3>{editingApp ? 'Edit Application' : 'Add New Application'}</h3>
-          <form onSubmit={editingApp ? handleUpdateApplication : handleSubmitApplication} className="row">
-            <div className="row" style={{ flexDirection: 'column', flex: 1 }}>
-              <input
-                type="text"
-                placeholder="Company name"
-                value={formData.company}
-                onChange={e => setFormData({...formData, company: e.target.value})}
-                required
-              />
-              <input
-                type="text"
-                placeholder="Role/Position title"
-                value={formData.role_title}
-                onChange={e => setFormData({...formData, role_title: e.target.value})}
-                required
-              />
-              <select
-                value={formData.status}
-                onChange={e => setFormData({...formData, status: e.target.value})}
-                required
-              >
-                <option value="wishlist">Wishlist</option>
-                <option value="applied">Applied</option>
-                <option value="oa">Online Assessment</option>
-                <option value="interview">Interview</option>
-                <option value="offer">Offer</option>
-                <option value="rejected">Rejected</option>
-                <option value="ghosted">Ghosted</option>
-                <option value="accepted">Accepted</option>
-                <option value="declined">Declined</option>
-              </select>
-            </div>
-            <div className="row" style={{ flexDirection: 'column', flex: 1 }}>
-              <input
-                type="text"
-                placeholder="Location (optional)"
-                value={formData.location}
-                onChange={e => setFormData({...formData, location: e.target.value})}
-              />
-              <input
-                type="text"
-                placeholder="Source (e.g., LinkedIn, Indeed)"
-                value={formData.source}
-                onChange={e => setFormData({...formData, source: e.target.value})}
-              />
-              <input
-                type="url"
-                placeholder="Application link (optional)"
-                value={formData.link}
-                onChange={e => setFormData({...formData, link: e.target.value})}
-              />
-            </div>
-            <div className="row" style={{ flexDirection: 'column', flex: 1 }}>
-              <input
-                type="date"
-                placeholder="Applied date"
-                value={formData.applied_at}
-                onChange={e => setFormData({...formData, applied_at: e.target.value})}
-              />
-              <textarea
-                placeholder="Notes (optional)"
-                value={formData.notes}
-                onChange={e => setFormData({...formData, notes: e.target.value})}
-                rows={3}
-              />
-            </div>
-          </form>
-          <div className="row" style={{ justifyContent: 'flex-end', gap: '8px' }}>
-            <button onClick={handleCancel}>Cancel</button>
-            <button 
-              onClick={editingApp ? handleUpdateApplication : handleSubmitApplication}
-              disabled={busy || !formData.company || !formData.role_title}
-            >
-              {busy ? 'Saving...' : (editingApp ? 'Update' : 'Add')}
+    <>
+      <FallingLeaves />
+      <div className="App">
+        <header className="App-header">
+          <h1>🍂 Job Application Tracker</h1>
+          <div className="row">
+            <p>Welcome back, {user.email}</p>
+            <button onClick={handleSignOut} disabled={busy} className="btn-secondary">
+              Sign out
             </button>
           </div>
-        </div>
-      )}
+        </header>
 
-      {loading ? (
-        <div className="card">
-          <p>Loading applications...</p>
+        {msg && (
+          <div className="card" style={{ marginBottom: '16px' }}>
+            <p style={{ margin: 0, opacity: 0.85, textAlign: 'center' }}>{msg}</p>
+          </div>
+        )}
+
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2 style={{ margin: 0, color: '#2d3748' }}>Your Applications ({applications.length})</h2>
+          <button 
+            onClick={() => setShowForm(true)}
+            disabled={showForm || editingApp}
+            className="btn-primary"
+            style={{ fontSize: '16px', padding: '12px 24px' }}
+          >
+            ✨ Add Application
+          </button>
         </div>
-      ) : applications.length === 0 ? (
-        <div className="card">
-          <p>No applications yet. Add your first one!</p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {applications.map(app => (
-            <div key={app.id} className="card">
-              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: '0 0 8px 0' }}>{app.role_title}</h3>
-                  <p style={{ margin: '0 0 4px 0', fontWeight: 'bold' }}>{app.company}</p>
-                  {app.location && <p style={{ margin: '0 0 4px 0', opacity: 0.7 }}>📍 {app.location}</p>}
-                  {app.source && <p style={{ margin: '0 0 4px 0', opacity: 0.7 }}>📋 Applied via {app.source}</p>}
-                  {app.applied_at && <p style={{ margin: '0 0 4px 0', opacity: 0.7 }}>📅 Applied {new Date(app.applied_at).toLocaleDateString()}</p>}
-                  {app.notes && <p style={{ margin: '0 0 8px 0', opacity: 0.8 }}>{app.notes}</p>}
-                  <div className="row" style={{ gap: '8px' }}>
-                    <span 
-                      style={{
-                        backgroundColor: statusColors[app.status],
-                        color: 'white',
-                        padding: '4px 8px',
-                        borderRadius: '12px',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                      }}
-                    >
-                      {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                    </span>
-                    {app.link && (
-                      <a 
-                        href={app.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ fontSize: '12px', opacity: 0.8 }}
-                      >
-                        🔗 View Application
-                      </a>
+
+        {(showForm || editingApp) && (
+          <div className="card" style={{ marginBottom: '24px' }}>
+            <div className="form-header">
+              <h3>{editingApp ? '✏️ Edit Application' : '🚀 Add New Application'}</h3>
+              <p>{editingApp ? 'Update your application details' : 'Track your next career opportunity'}</p>
+            </div>
+            <form onSubmit={editingApp ? handleUpdateApplication : handleSubmitApplication} className="job-form">
+              <div className="form-group">
+                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Company</label>
+                <input
+                  type="text"
+                  placeholder="Company name"
+                  value={formData.company}
+                  onChange={e => setFormData({...formData, company: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Role</label>
+                <input
+                  type="text"
+                  placeholder="Role/Position title"
+                  value={formData.role_title}
+                  onChange={e => setFormData({...formData, role_title: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Status</label>
+                <select
+                  value={formData.status}
+                  onChange={e => setFormData({...formData, status: e.target.value})}
+                  required
+                >
+                  <option value="wishlist">🌟 Wishlist</option>
+                  <option value="applied">📝 Applied</option>
+                  <option value="oa">💻 Online Assessment</option>
+                  <option value="interview">🎯 Interview</option>
+                  <option value="offer">🎉 Offer</option>
+                  <option value="rejected">❌ Rejected</option>
+                  <option value="ghosted">👻 Ghosted</option>
+                  <option value="accepted">✅ Accepted</option>
+                  <option value="declined">🚫 Declined</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Location</label>
+                <input
+                  type="text"
+                  placeholder="Location (optional)"
+                  value={formData.location}
+                  onChange={e => setFormData({...formData, location: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Source</label>
+                <input
+                  type="text"
+                  placeholder="Source (e.g., LinkedIn, Indeed)"
+                  value={formData.source}
+                  onChange={e => setFormData({...formData, source: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Application Link</label>
+                <input
+                  type="url"
+                  placeholder="Application link (optional)"
+                  value={formData.link}
+                  onChange={e => setFormData({...formData, link: e.target.value})}
+                />
+              </div>
+              <div className="form-group">
+                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Applied Date</label>
+                <input
+                  type="date"
+                  placeholder="Applied date"
+                  value={formData.applied_at}
+                  onChange={e => setFormData({...formData, applied_at: e.target.value})}
+                />
+              </div>
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label style={{ fontWeight: '600', color: '#2d3748', marginBottom: '4px' }}>Notes</label>
+                <textarea
+                  placeholder="Add any notes about this application..."
+                  value={formData.notes}
+                  onChange={e => setFormData({...formData, notes: e.target.value})}
+                  rows={3}
+                />
+              </div>
+            </form>
+            <div className="row" style={{ justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <button onClick={handleCancel} className="btn-secondary">
+                Cancel
+              </button>
+              <button 
+                onClick={editingApp ? handleUpdateApplication : handleSubmitApplication}
+                disabled={busy || !formData.company || !formData.role_title}
+                className="btn-primary"
+              >
+                {busy ? 'Saving...' : (editingApp ? 'Update Application' : 'Add Application')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="card loading-state">
+            <p>🍂 Loading your applications...</p>
+          </div>
+        ) : applications.length === 0 ? (
+          <div className="card empty-state">
+            <p>🍂 No applications yet. Add your first one to get started!</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {applications.map(app => (
+              <div key={app.id} className="card application-card">
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <h3>{app.role_title}</h3>
+                    <p className="company">{app.company}</p>
+                    {app.location && (
+                      <p className="meta">📍 {app.location}</p>
                     )}
+                    {app.source && (
+                      <p className="meta">📋 Applied via {app.source}</p>
+                    )}
+                    {app.applied_at && (
+                      <p className="meta">📅 Applied {new Date(app.applied_at).toLocaleDateString()}</p>
+                    )}
+                    {app.notes && (
+                      <div className="notes">{app.notes}</div>
+                    )}
+                    <div className="row" style={{ gap: '12px', marginTop: '16px' }}>
+                      <span 
+                        className={`status-badge status-${app.status}`}
+                      >
+                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                      </span>
+                      {app.link && (
+                        <a 
+                          href={app.link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ 
+                            fontSize: '14px', 
+                            color: '#ff8c42',
+                            textDecoration: 'none',
+                            fontWeight: '600'
+                          }}
+                        >
+                          🔗 View Application
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="row" style={{ gap: '8px' }}>
+                    <button 
+                      onClick={() => handleEdit(app)}
+                      disabled={editingApp}
+                      className="btn-secondary"
+                      style={{ fontSize: '12px', padding: '8px 12px' }}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteApplication(app.id)}
+                      disabled={busy}
+                      className="btn-danger"
+                      style={{ fontSize: '12px', padding: '8px 12px' }}
+                    >
+                      🗑️ Delete
+                    </button>
                   </div>
                 </div>
-                <div className="row" style={{ gap: '8px' }}>
-                  <button 
-                    onClick={() => handleEdit(app)}
-                    disabled={editingApp}
-                    style={{ fontSize: '12px', padding: '6px 8px' }}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteApplication(app.id)}
-                    disabled={busy}
-                    style={{ 
-                      fontSize: '12px', 
-                      padding: '6px 8px',
-                      backgroundColor: '#dc2626',
-                      borderColor: '#dc2626'
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
