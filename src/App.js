@@ -514,17 +514,118 @@ export default function App() {
           </div>
         )}
 
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Your Applications ({applications.length})</h2>
-          <button 
-            onClick={() => setShowForm(true)}
-            disabled={showForm || editingApp}
-            className="btn-primary"
-            style={{ fontSize: '16px', padding: '12px 24px' }}
-          >
-            ✨ Add Application
-          </button>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+          <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>Your Applications ({filteredApplications.length})</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+            <button
+              onClick={() => setShowForm(true)}
+              disabled={showForm || editingApp}
+              className="btn-primary"
+              style={{ fontSize: '16px', padding: '12px 24px' }}
+            >
+              Add Application
+            </button>
+            <button
+              onClick={() => setFilters(prev => ({ ...prev, isExpanded: !prev.isExpanded }))}
+              className="btn-primary"
+              style={{ fontSize: '12px', padding: '6px 12px', width: 'fit-content' }}
+              title={filters.isExpanded ? 'Collapse filters' : 'Expand filters'}
+            >
+              Filters {(filters.searchTerm || filters.dateRange !== 'all' || filters.statuses.length > 0) ? ' (Active)' : ''} {filters.isExpanded ? '−' : '+'}
+            </button>
+          </div>
         </div>
+
+        {/* Filter Options - Only shown when filter button is clicked */}
+        {filters.isExpanded && (
+          <div className="expanded-filter-content">
+            <div className="filter-section">
+              <h4 style={{ margin: '0 0 12px 0', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '600' }}>📅 Date Range</h4>
+              <div className="filter-options">
+                {[
+                  { value: 'all', label: 'All Time' },
+                  { value: 'today', label: 'Today' },
+                  { value: 'week', label: 'This Week' },
+                  { value: 'month', label: 'This Month' },
+                  { value: '3months', label: 'Last 3 Months' },
+                  { value: '6months', label: 'Last 6 Months' },
+                  { value: 'year', label: 'This Year' },
+                  { value: 'custom', label: 'Custom Range' }
+                ].map(option => (
+                  <button
+                    key={option.value}
+                    onClick={() => setFilters(prev => ({ ...prev, dateRange: option.value }))}
+                    className={`filter-chip ${filters.dateRange === option.value ? 'active' : ''}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              
+              {filters.dateRange === 'custom' && (
+                <div className="custom-date-inputs">
+                  <input
+                    type="date"
+                    value={filters.customStartDate}
+                    onChange={e => setFilters(prev => ({ ...prev, customStartDate: e.target.value }))}
+                    placeholder="Start Date"
+                  />
+                  <input
+                    type="date"
+                    value={filters.customEndDate}
+                    onChange={e => setFilters(prev => ({ ...prev, customEndDate: e.target.value }))}
+                    placeholder="End Date"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="filter-section">
+              <h4 style={{ margin: '0 0 12px 0', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '600' }}>📊 Status</h4>
+              <div className="filter-options">
+                {[
+                  { value: 'wishlist', label: '🌟 Wishlist' },
+                  { value: 'applied', label: '📝 Applied' },
+                  { value: 'oa', label: '💻 OA' },
+                  { value: 'interview', label: '🎯 Interview' },
+                  { value: 'offer', label: '🎉 Offer' },
+                  { value: 'rejected', label: '❌ Rejected' },
+                  { value: 'ghosted', label: '👻 Ghosted' },
+                  { value: 'accepted', label: '✅ Accepted' },
+                  { value: 'declined', label: '🚫 Declined' }
+                ].map(status => (
+                  <button
+                    key={status.value}
+                    onClick={() => toggleStatusFilter(status.value)}
+                    className={`filter-chip ${filters.statuses.includes(status.value) ? 'active' : ''}`}
+                  >
+                    {status.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-section">
+              <h4 style={{ margin: '0 0 12px 0', color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '600' }}>🔍 Search</h4>
+              <input
+                type="text"
+                placeholder="Search by company, role, location, or notes..."
+                value={filters.searchTerm}
+                onChange={e => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                className="search-input"
+              />
+            </div>
+
+            <div className="filter-actions">
+              <button onClick={clearFilters} className="btn-secondary" style={{ fontSize: '14px', padding: '8px 16px' }}>
+                🗑️ Clear All
+              </button>
+              <span className="filter-summary">
+                Showing {filteredApplications.length} of {applications.length} applications
+              </span>
+            </div>
+          </div>
+        )}
 
         {(showForm || editingApp) && (
           <div className="card" style={{ marginBottom: '24px' }}>
@@ -639,6 +740,13 @@ export default function App() {
         ) : applications.length === 0 ? (
           <div className="card empty-state">
             <p>🍂 No applications yet. Add your first one to get started!</p>
+          </div>
+        ) : filteredApplications.length === 0 ? (
+          <div className="card empty-state">
+            <p>🔍 No applications match your current filters. Try adjusting your search criteria.</p>
+            <button onClick={clearFilters} className="btn-secondary" style={{ marginTop: '12px' }}>
+              🗑️ Clear All Filters
+            </button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
