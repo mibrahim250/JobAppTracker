@@ -86,6 +86,168 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange }) {
   );
 }
 
+// Analytics Modal Component
+function AnalyticsModal({ isOpen, onClose, applications }) {
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && applications.length > 0) {
+      generateAnalytics();
+    }
+  }, [isOpen, applications]);
+
+  const generateAnalytics = async () => {
+    setLoading(true);
+    
+    // Simulate loading for fun animation
+    setTimeout(() => {
+      setAnalyticsData({ 
+        status: 'maintenance',
+        message: 'Will be implemented with Spring Boot later'
+      });
+      setLoading(false);
+    }, 1500);
+  };
+
+
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content analytics-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>📊 Application Analytics</h3>
+          <button onClick={onClose} className="close-btn">×</button>
+        </div>
+        <div className="modal-body">
+          {loading ? (
+            <div className="fun-loading-state">
+              <div className="bouncing-emoji">📊</div>
+              <p>Generating your analytics...</p>
+              <div className="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+                     ) : analyticsData ? (
+             <div className="analytics-content">
+               {/* Check if Spring Boot is down */}
+               {analyticsData.status === 'maintenance' ? (
+                 <div className="fun-maintenance-message">
+                   <div className="popup-emoji">🚀</div>
+                   <h3>Coming Soon!</h3>
+                   <p>{analyticsData.message}</p>
+                   <div className="sparkle">✨</div>
+                 </div>
+               ) : (
+                 <>
+                   {/* Summary Cards */}
+                   <div className="analytics-summary">
+                     <div className="summary-card">
+                       <h4>Total Applications</h4>
+                       <p className="summary-number">{analyticsData.totalApplications}</p>
+                     </div>
+                     <div className="summary-card">
+                       <h4>Success Rate</h4>
+                       <p className="summary-number">{analyticsData.successRate}%</p>
+                     </div>
+                     <div className="summary-card">
+                       <h4>Active Pipeline</h4>
+                       <p className="summary-number">{analyticsData.successCount}</p>
+                                          </div>
+                   </div>
+               
+               {/* Status Distribution */}
+               <div className="analytics-section">
+                 <h4>📊 Application Status Distribution</h4>
+                 <div className="status-chart">
+                   {Object.entries(analyticsData.statusCounts).map(([status, count]) => (
+                     <div key={status} className="status-bar">
+                       <span className="status-label">{status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                       <div className="status-bar-container">
+                         <div 
+                           className="status-bar-fill" 
+                           style={{ 
+                             width: `${(count / analyticsData.totalApplications) * 100}%`,
+                             backgroundColor: getStatusColor(status)
+                           }}
+                         ></div>
+                       </div>
+                       <span className="status-count">{count}</span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+               
+               {/* Monthly Trends */}
+               <div className="analytics-section">
+                 <h4>📈 Monthly Application Trends</h4>
+                 <div className="monthly-chart">
+                   {Object.entries(analyticsData.monthlyData).map(([month, count]) => (
+                     <div key={month} className="month-bar">
+                       <span className="month-label">{month}</span>
+                       <div className="month-bar-container">
+                         <div 
+                           className="month-bar-fill" 
+                           style={{ 
+                             height: `${(count / Math.max(...Object.values(analyticsData.monthlyData))) * 100}%`
+                           }}
+                         ></div>
+                       </div>
+                       <span className="month-count">{count}</span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+               
+               {/* Top Companies */}
+               <div className="analytics-section">
+                 <h4>🏢 Top Companies Applied To</h4>
+                 <div className="company-list">
+                   {Object.entries(analyticsData.companyCounts)
+                     .sort(([,a], [,b]) => b - a)
+                     .slice(0, 5)
+                     .map(([company, count]) => (
+                       <div key={company} className="company-item">
+                         <span className="company-name">{company}</span>
+                         <span className="company-count">{count} application{count > 1 ? 's' : ''}</span>
+                       </div>
+                     ))}
+                 </div>
+               </div>
+                 </>
+               )}
+             </div>
+          ) : (
+            <div className="empty-state">
+              <p>📊 No data available for analytics</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Helper function for status colors
+function getStatusColor(status) {
+  const colors = {
+    'wishlist': '#6366f1',
+    'applied': '#f59e0b',
+    'oa': '#8b5cf6',
+    'interview': '#06b6d4',
+    'offer': '#10b981',
+    'rejected': '#ef4444',
+    'ghosted': '#6b7280',
+    'accepted': '#059669',
+    'declined': '#dc2626'
+  };
+  return colors[status] || '#6b7280';
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [mode, setMode] = useState('signin');
@@ -98,6 +260,7 @@ export default function App() {
   const [theme, setTheme] = useState('black');
   const [showSettings, setShowSettings] = useState(false);
   const [expandedView, setExpandedView] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Job application states
   const [applications, setApplications] = useState([]);
@@ -527,14 +690,23 @@ export default function App() {
             >
               Add Application
             </button>
-            <button
-              onClick={() => setFilters(prev => ({ ...prev, isExpanded: !prev.isExpanded }))}
-              className="btn-primary"
-              style={{ fontSize: '12px', padding: '6px 12px', width: 'fit-content' }}
-              title={filters.isExpanded ? 'Collapse filters' : 'Expand filters'}
-            >
-              Filters {(filters.searchTerm || filters.dateRange !== 'all' || filters.statuses.length > 0) ? ' (Active)' : ''} {filters.isExpanded ? '−' : '+'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="🔍 Search applications..."
+                value={filters.searchTerm}
+                onChange={e => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
+                className="inline-search-input"
+              />
+              <button
+                onClick={() => setFilters(prev => ({ ...prev, isExpanded: !prev.isExpanded }))}
+                className="btn-primary"
+                style={{ fontSize: '12px', padding: '6px 12px', width: 'fit-content' }}
+                title={filters.isExpanded ? 'Collapse filters' : 'Expand filters'}
+              >
+                Filters {(filters.searchTerm || filters.dateRange !== 'all' || filters.statuses.length > 0) ? ' (Active)' : ''} {filters.isExpanded ? '−' : '+'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -629,8 +801,15 @@ export default function App() {
           </div>
         )}
 
-        {/* View Toggle Button */}
+        {/* Analytics and View Toggle Buttons */}
         <div className="view-toggle-container">
+          <button
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className="btn-primary"
+            style={{ fontSize: '14px', padding: '8px 16px', marginRight: '12px' }}
+          >
+            📊 Analytics
+          </button>
           <button
             onClick={() => setExpandedView(!expandedView)}
             className="btn-secondary"
@@ -870,6 +1049,11 @@ export default function App() {
           onClose={() => setShowSettings(false)}
           currentTheme={theme}
           onThemeChange={setTheme}
+        />
+        <AnalyticsModal 
+          isOpen={showAnalytics}
+          onClose={() => setShowAnalytics(false)}
+          applications={applications}
         />
       </div>
     </>
