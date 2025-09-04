@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './config/supabase';
 import './App.css';
 
-// Animated Falling Leaves Component
-function FallingLeaves({ theme }) {
+// Animated Background Component
+function AnimatedBackground({ theme }) {
   if (theme === 'winter') {
     return (
       <div className="snow-container">
@@ -17,6 +17,35 @@ function FallingLeaves({ theme }) {
         <div className="snowflake"></div>
         <div className="snowflake"></div>
         <div className="snowflake"></div>
+      </div>
+    );
+  }
+  
+  if (theme === 'starry') {
+    return (
+      <div className="starry-sky-container">
+        <div className="star star-1"></div>
+        <div className="star star-2"></div>
+        <div className="star star-3"></div>
+        <div className="star star-4"></div>
+        <div className="star star-5"></div>
+        <div className="star star-6"></div>
+        <div className="star star-7"></div>
+        <div className="star star-8"></div>
+        <div className="star star-9"></div>
+        <div className="star star-10"></div>
+        <div className="star star-11"></div>
+        <div className="star star-12"></div>
+        <div className="star star-13"></div>
+        <div className="star star-14"></div>
+        <div className="star star-15"></div>
+        <div className="star star-16"></div>
+        <div className="star star-17"></div>
+        <div className="star star-18"></div>
+        <div className="star star-19"></div>
+        <div className="star star-20"></div>
+        <div className="shooting-star"></div>
+        <div className="shooting-star shooting-star-2"></div>
       </div>
     );
   }
@@ -50,7 +79,8 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange }) {
     { id: 'fall', name: '🍂 Fall Vibes', description: 'Warm autumn colors with falling leaves' },
     { id: 'black', name: '⚫ Clean Black', description: 'Minimalist dark theme for focus' },
     { id: 'winter', name: '❄️ Winter Wonderland', description: 'Cool blues with falling snow' },
-    { id: 'vintage', name: '☕ Vintage Cafe', description: 'Old cafe aesthetic with warm browns and sepia tones' }
+    { id: 'vintage', name: '☕ Vintage Cafe', description: 'Old cafe aesthetic with warm browns and sepia tones' },
+    { id: 'starry', name: '🌌 Starry Night', description: 'Magical night sky with twinkling stars' }
   ];
 
   return (
@@ -293,7 +323,7 @@ export default function App() {
   // Load theme from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('jobTrackerTheme');
-    if (savedTheme && ['fall', 'black', 'winter', 'vintage'].includes(savedTheme)) {
+    if (savedTheme && ['fall', 'black', 'winter', 'vintage', 'starry'].includes(savedTheme)) {
       setTheme(savedTheme);
     }
   }, []);
@@ -600,10 +630,10 @@ export default function App() {
   if (!user) {
     return (
       <>
-        <FallingLeaves theme={theme} />
+        <AnimatedBackground theme={theme} />
         <div className="App">
           <header className="App-header">
-            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'vintage' ? '☕' : '🍂'} Job Application Tracker</h1>
+            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'vintage' ? '☕' : theme === 'starry' ? '🌌' : '🍂'} Job Application Tracker</h1>
             <p>Track your career journey with style</p>
           </header>
 
@@ -652,10 +682,10 @@ export default function App() {
 
   return (
     <>
-      <FallingLeaves theme={theme} />
+      <AnimatedBackground theme={theme} />
       <div className="App">
         <header className="App-header">
-          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'vintage' ? '☕' : '🍂'} Job Application Tracker</h1>
+          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'vintage' ? '☕' : theme === 'starry' ? '🌌' : '🍂'} Job Application Tracker</h1>
           <div className="row">
             <p>Welcome back, {user.email}</p>
             <div className="row" style={{ gap: '12px' }}>
