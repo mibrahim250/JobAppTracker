@@ -491,6 +491,7 @@ export default function App() {
         notes: ''
       });
       loadApplications();
+      // Don't scroll to top - stay in current position
     } catch (err) {
       setMsg('Failed to update application: ' + err.message);
     } finally {
@@ -546,6 +547,7 @@ export default function App() {
       applied_at: '',
       notes: ''
     });
+    // Don't scroll to top - stay in current position
   }
 
   function toggleStatusFilter(status) {
@@ -849,13 +851,13 @@ export default function App() {
           </button>
         </div>
 
-        {(showForm || editingApp) && (
+{showForm && (
           <div className="card" style={{ marginBottom: '24px' }}>
             <div className="form-header">
-              <h3>{editingApp ? '✏️ Edit Application' : '🚀 Add New Application'}</h3>
-              <p>{editingApp ? 'Update your application details' : 'Track your next career opportunity'}</p>
+              <h3>🚀 Add New Application</h3>
+              <p>Track your next career opportunity</p>
             </div>
-            <form onSubmit={editingApp ? handleUpdateApplication : handleSubmitApplication} className="job-form">
+            <form onSubmit={handleSubmitApplication} className="job-form">
               <div className="form-group">
                 <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Company</label>
                 <input
@@ -945,11 +947,11 @@ export default function App() {
                 Cancel
               </button>
               <button 
-                onClick={editingApp ? handleUpdateApplication : handleSubmitApplication}
+                onClick={handleSubmitApplication}
                 disabled={busy || !formData.company || !formData.role_title}
                 className="btn-primary"
               >
-                {busy ? 'Saving...' : (editingApp ? 'Update Application' : 'Add Application')}
+                {busy ? 'Saving...' : 'Add Application'}
               </button>
             </div>
           </div>
@@ -974,100 +976,208 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {filteredApplications.map(app => (
               <div key={app.id} className={`card application-card ${expandedView ? 'expanded' : 'compact'}`}>
-                {expandedView ? (
-                  // Expanded View - Full Details
-                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <h3>{app.role_title}</h3>
-                      <p className="company">{app.company}</p>
-                      {app.location && (
-                        <p className="meta">📍 {app.location}</p>
-                      )}
-                      {app.source && (
-                        <p className="meta">📋 Applied via {app.source}</p>
-                      )}
-                      {app.applied_at && (
-                        <p className="meta">📅 Applied {new Date(app.applied_at).toLocaleDateString()}</p>
-                      )}
-                      {app.notes && (
-                        <div className="notes">{app.notes}</div>
-                      )}
-                      <div className="row" style={{ gap: '12px', marginTop: '16px' }}>
-                        <span 
-                          className={`status-badge status-${app.status}`}
-                        >
-                          {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                        </span>
-                        {app.link && (
-                          <a 
-                            href={app.link} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            style={{ 
-                              fontSize: '14px', 
-                              color: 'var(--accent-primary)',
-                              textDecoration: 'none',
-                              fontWeight: '600'
-                            }}
-                          >
-                            🔗 View Application
-                          </a>
-                        )}
-                      </div>
+                {editingApp && editingApp.id === app.id ? (
+                  // Inline Edit Form
+                  <div className="inline-edit-form">
+                    <div className="form-header">
+                      <h3>✏️ Edit Application</h3>
+                      <p>Update your application details</p>
                     </div>
-                    <div className="row" style={{ gap: '8px' }}>
-                      <button 
-                        onClick={() => handleEdit(app)}
-                        disabled={editingApp}
-                        className="btn-secondary"
-                        style={{ fontSize: '12px', padding: '8px 12px' }}
-                      >
-                        ✏️ Edit
+                    <form onSubmit={handleUpdateApplication} className="job-form">
+                      <div className="form-group">
+                        <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Company</label>
+                        <input
+                          type="text"
+                          placeholder="Company name"
+                          value={formData.company}
+                          onChange={e => setFormData({...formData, company: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Role</label>
+                        <input
+                          type="text"
+                          placeholder="Role/Position title"
+                          value={formData.role_title}
+                          onChange={e => setFormData({...formData, role_title: e.target.value})}
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Status</label>
+                        <select
+                          value={formData.status}
+                          onChange={e => setFormData({...formData, status: e.target.value})}
+                          required
+                        >
+                          <option value="wishlist">🌟 Wishlist</option>
+                          <option value="applied">📝 Applied</option>
+                          <option value="oa">💻 Online Assessment</option>
+                          <option value="interview">🎯 Interview</option>
+                          <option value="offer">🎉 Offer</option>
+                          <option value="rejected">❌ Rejected</option>
+                          <option value="ghosted">👻 Ghosted</option>
+                          <option value="accepted">✅ Accepted</option>
+                          <option value="declined">🚫 Declined</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Location</label>
+                        <input
+                          type="text"
+                          placeholder="Location (optional)"
+                          value={formData.location}
+                          onChange={e => setFormData({...formData, location: e.target.value})}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Source</label>
+                        <input
+                          type="text"
+                          placeholder="Source (e.g., LinkedIn, Indeed)"
+                          value={formData.source}
+                          onChange={e => setFormData({...formData, source: e.target.value})}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Application Link</label>
+                        <input
+                          type="url"
+                          placeholder="Application link (optional)"
+                          value={formData.link}
+                          onChange={e => setFormData({...formData, link: e.target.value})}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Applied Date</label>
+                        <input
+                          type="date"
+                          placeholder="Applied date"
+                          value={formData.applied_at}
+                          onChange={e => setFormData({...formData, applied_at: e.target.value})}
+                        />
+                      </div>
+                      <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Notes</label>
+                        <textarea
+                          placeholder="Add any notes about this application..."
+                          value={formData.notes}
+                          onChange={e => setFormData({...formData, notes: e.target.value})}
+                          rows={3}
+                        />
+                      </div>
+                    </form>
+                    <div className="row" style={{ justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+                      <button onClick={handleCancel} className="btn-secondary">
+                        Cancel
                       </button>
                       <button 
-                        onClick={() => handleDeleteApplication(app.id)}
-                        disabled={busy}
-                        className="btn-danger"
-                        style={{ fontSize: '12px', padding: '8px 12px' }}
+                        onClick={handleUpdateApplication}
+                        disabled={busy || !formData.company || !formData.role_title}
+                        className="btn-primary"
                       >
-                        🗑️ Delete
+                        {busy ? 'Saving...' : 'Update Application'}
                       </button>
                     </div>
                   </div>
                 ) : (
-                  // Compact View - Just Job Name and Status
-                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}>{app.role_title}</h3>
-                      <p className="company" style={{ margin: '0', fontSize: '0.9rem' }}>{app.company}</p>
-                    </div>
-                    <div className="row" style={{ gap: '12px', alignItems: 'center' }}>
-                      <span 
-                        className={`status-badge status-${app.status}`}
-                        style={{ fontSize: '11px', padding: '4px 8px' }}
-                      >
-                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
-                      </span>
-                      <div className="row" style={{ gap: '6px' }}>
+                  // Normal View
+                  expandedView ? (
+                    // Expanded View - Full Details
+                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <h3>{app.role_title}</h3>
+                        <p className="company">{app.company}</p>
+                        {app.location && (
+                          <p className="meta">📍 {app.location}</p>
+                        )}
+                        {app.source && (
+                          <p className="meta">📋 Applied via {app.source}</p>
+                        )}
+                        {app.applied_at && (
+                          <p className="meta">📅 Applied {new Date(app.applied_at).toLocaleDateString()}</p>
+                        )}
+                        {app.notes && (
+                          <div className="notes">{app.notes}</div>
+                        )}
+                        <div className="row" style={{ gap: '12px', marginTop: '16px' }}>
+                          <span 
+                            className={`status-badge status-${app.status}`}
+                          >
+                            {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                          </span>
+                          {app.link && (
+                            <a 
+                              href={app.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ 
+                                fontSize: '14px', 
+                                color: 'var(--accent-primary)',
+                                textDecoration: 'none',
+                                fontWeight: '600'
+                              }}
+                            >
+                              🔗 View Application
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <div className="row" style={{ gap: '8px' }}>
                         <button 
                           onClick={() => handleEdit(app)}
                           disabled={editingApp}
                           className="btn-secondary"
-                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                          style={{ fontSize: '12px', padding: '8px 12px' }}
                         >
-                          ✏️
+                          ✏️ Edit
                         </button>
                         <button 
                           onClick={() => handleDeleteApplication(app.id)}
                           disabled={busy}
                           className="btn-danger"
-                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                          style={{ fontSize: '12px', padding: '8px 12px' }}
                         >
-                          🗑️
+                          🗑️ Delete
                         </button>
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    // Compact View - Just Job Name and Status
+                    <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}>{app.role_title}</h3>
+                        <p className="company" style={{ margin: '0', fontSize: '0.9rem' }}>{app.company}</p>
+                      </div>
+                      <div className="row" style={{ gap: '12px', alignItems: 'center' }}>
+                        <span 
+                          className={`status-badge status-${app.status}`}
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                        >
+                          {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                        </span>
+                        <div className="row" style={{ gap: '6px' }}>
+                          <button 
+                            onClick={() => handleEdit(app)}
+                            disabled={editingApp}
+                            className="btn-secondary"
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteApplication(app.id)}
+                            disabled={busy}
+                            className="btn-danger"
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
                 )}
               </div>
             ))}
