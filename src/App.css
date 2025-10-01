@@ -55,6 +55,19 @@
   --leaf-color: linear-gradient(45deg, #8d6e63, #a1887f);
 }
 
+.theme-blood-orange {
+  --bg-primary: linear-gradient(135deg, #1a0a0a 0%, #2d1515 50%, #1a0a0a 100%);
+  --bg-secondary: rgba(30, 15, 15, 0.95);
+  --bg-card: rgba(40, 20, 20, 0.95);
+  --text-primary: #ffd7ba;
+  --text-secondary: #ffb88c;
+  --accent-primary: #ff6b35;
+  --accent-secondary: #8b1a1a;
+  --border-color: rgba(255, 107, 53, 0.3);
+  --shadow-color: rgba(255, 107, 53, 0.2);
+  --leaf-color: transparent;
+}
+
 body { 
   margin: 0; 
   background: var(--bg-primary);
@@ -497,6 +510,118 @@ body {
 .theme-starry .inline-search-input:focus {
   border-color: #ffd700;
   box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2), 0 3px 8px var(--shadow-color);
+}
+
+/* Blood Orange Theme Styling */
+.theme-blood-orange .card {
+  background: rgba(40, 20, 20, 0.95);
+  border: 2px solid rgba(255, 107, 53, 0.3);
+  box-shadow: 0 8px 32px rgba(255, 107, 53, 0.2);
+  position: relative;
+}
+
+.theme-blood-orange .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 107, 53, 0.05) 50%, transparent 70%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.theme-blood-orange .btn-primary {
+  background: linear-gradient(135deg, #ff6b35, #ff4500);
+  border: 2px solid rgba(255, 107, 53, 0.5);
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.4);
+  color: #ffffff;
+}
+
+.theme-blood-orange .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ff8c42, #ff6b35);
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.6);
+}
+
+.theme-blood-orange .btn-secondary {
+  background: linear-gradient(135deg, #8b1a1a, #5c0a0a);
+  border: 2px solid rgba(255, 107, 53, 0.3);
+}
+
+.theme-blood-orange .btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a52020, #8b1a1a);
+}
+
+.theme-blood-orange .status-badge {
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+}
+
+.theme-blood-orange input,
+.theme-blood-orange select,
+.theme-blood-orange textarea {
+  background: rgba(30, 15, 15, 0.9);
+  border: 2px solid rgba(255, 107, 53, 0.3);
+  color: #ffd7ba;
+}
+
+.theme-blood-orange input:focus,
+.theme-blood-orange select:focus,
+.theme-blood-orange textarea:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.3);
+}
+
+.theme-blood-orange .filter-chip {
+  background: rgba(30, 15, 15, 0.9);
+  border: 2px solid rgba(255, 107, 53, 0.3);
+  color: #ffd7ba;
+}
+
+.theme-blood-orange .filter-chip:hover {
+  border-color: #ff6b35;
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+}
+
+.theme-blood-orange .filter-chip.active {
+  background: linear-gradient(135deg, #ff6b35, #ff4500);
+  color: #ffffff;
+  border-color: #ff6b35;
+}
+
+.theme-blood-orange .modal-content {
+  background: rgba(40, 20, 20, 0.98);
+  border: 2px solid rgba(255, 107, 53, 0.3);
+  box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3);
+}
+
+.theme-blood-orange .modal-header {
+  border-bottom: 2px solid rgba(255, 107, 53, 0.2);
+}
+
+.theme-blood-orange .inline-search-input {
+  background: rgba(30, 15, 15, 0.9);
+  border-color: rgba(255, 107, 53, 0.3);
+}
+
+.theme-blood-orange .inline-search-input:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.3), 0 3px 8px var(--shadow-color);
+}
+
+.theme-preview-blood-orange {
+  background: linear-gradient(135deg, #1a0a0a 0%, #ff6b35 50%, #8b1a1a 100%);
+  position: relative;
+}
+
+.theme-preview-blood-orange::before {
+  content: '🍊';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
 }
 
 @keyframes falling {
@@ -1032,6 +1157,20 @@ form.row .row button {
 
 .theme-preview-winter {
   background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 50%, #90caf9 100%);
+}
+
+.theme-preview-brown {
+  background: linear-gradient(135deg, #8d6e63 0%, #a1887f 50%, #bcaaa4 100%);
+  position: relative;
+}
+
+.theme-preview-brown::before {
+  content: '🤎';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 16px;
 }
 
 .theme-vintage .theme-preview {
@@ -1792,5 +1931,95 @@ form.row .row button {
   100% {
     transform: translateY(100vh) rotate(360deg);
     opacity: 0;
+  }
+}
+
+/* Blood Orange Liquid Animation */
+.liquid-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a0a0a 0%, #2d1515 50%, #1a0a0a 100%);
+}
+
+.liquid-blob {
+  position: absolute;
+  border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  opacity: 0.6;
+  filter: blur(40px);
+  animation: liquidMove 20s infinite ease-in-out;
+}
+
+.liquid-blob-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #ff6b35 0%, #ff4500 50%, #8b1a1a 100%);
+  top: 10%;
+  left: 10%;
+  animation-duration: 25s;
+  animation-delay: 0s;
+}
+
+.liquid-blob-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, #ff8c42 0%, #ff6b35 50%, #8b2500 100%);
+  top: 50%;
+  left: 60%;
+  animation-duration: 30s;
+  animation-delay: -5s;
+}
+
+.liquid-blob-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #8b1a1a 0%, #ff4500 50%, #5c0a0a 100%);
+  top: 70%;
+  left: 20%;
+  animation-duration: 22s;
+  animation-delay: -10s;
+}
+
+.liquid-blob-4 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, #ff4500 0%, #8b1a1a 50%, #ff6b35 100%);
+  top: 20%;
+  left: 70%;
+  animation-duration: 28s;
+  animation-delay: -15s;
+}
+
+.liquid-blob-5 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, #ff6b35 0%, #8b2500 50%, #ff8c42 100%);
+  top: 80%;
+  left: 50%;
+  animation-duration: 26s;
+  animation-delay: -20s;
+}
+
+@keyframes liquidMove {
+  0%, 100% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  }
+  25% {
+    transform: translate(50px, -80px) scale(1.1) rotate(90deg);
+    border-radius: 50% 60% 40% 60% / 60% 40% 50% 40%;
+  }
+  50% {
+    transform: translate(-30px, 100px) scale(0.9) rotate(180deg);
+    border-radius: 60% 40% 60% 40% / 50% 60% 40% 60%;
+  }
+  75% {
+    transform: translate(-80px, -50px) scale(1.05) rotate(270deg);
+    border-radius: 40% 50% 60% 50% / 60% 50% 40% 50%;
   }
 }

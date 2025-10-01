@@ -69,6 +69,18 @@ function AnimatedBackground({ theme }) {
     );
   }
   
+  if (theme === 'blood-orange') {
+    return (
+      <div className="liquid-container">
+        <div className="liquid-blob liquid-blob-1"></div>
+        <div className="liquid-blob liquid-blob-2"></div>
+        <div className="liquid-blob liquid-blob-3"></div>
+        <div className="liquid-blob liquid-blob-4"></div>
+        <div className="liquid-blob liquid-blob-5"></div>
+      </div>
+    );
+  }
+  
   // Fall theme (default)
   return (
     <div className="leaves-container">
@@ -94,7 +106,8 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange }) {
     { id: 'black', name: '⚫ Clean Black', description: 'Minimalist dark theme for focus' },
     { id: 'winter', name: '❄️ Winter Wonderland', description: 'Cool blues with falling snow' },
     { id: 'starry', name: '🌌 Starry Night', description: 'Magical night sky with twinkling stars' },
-    { id: 'brown', name: '🤎 Cozy Brown', description: 'Warm brown tones with rustic charm' }
+    { id: 'brown', name: '🤎 Cozy Brown', description: 'Warm brown tones with rustic charm' },
+    { id: 'blood-orange', name: '🍊 Blood Orange', description: 'Dark mode with liquid orange & maroon vibes' }
   ];
 
   return (
@@ -346,7 +359,7 @@ export default function App() {
   // Load theme from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('jobTrackerTheme');
-    if (savedTheme && ['black', 'winter', 'starry', 'brown'].includes(savedTheme)) {
+    if (savedTheme && ['black', 'winter', 'starry', 'brown', 'blood-orange'].includes(savedTheme)) {
       setTheme(savedTheme);
     }
   }, []);
@@ -676,7 +689,7 @@ export default function App() {
         <AnimatedBackground theme={theme} />
         <div className="App">
           <header className="App-header">
-            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'brown' ? '🤎' : '🍂'} Job Application Tracker</h1>
+            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'brown' ? '🤎' : theme === 'blood-orange' ? '🍊' : '🍂'} Job Application Tracker</h1>
             <p>Track your career journey with style</p>
           </header>
 
@@ -728,7 +741,7 @@ export default function App() {
       <AnimatedBackground theme={theme} />
       <div className="App">
         <header className="App-header">
-          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'brown' ? '🤎' : '🍂'} Job Application Tracker</h1>
+          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'brown' ? '🤎' : theme === 'blood-orange' ? '🍊' : '🍂'} Job Application Tracker</h1>
           <div className="row">
             <p>Welcome back, {user.email}</p>
             <div className="row" style={{ gap: '12px' }}>
