@@ -54,6 +54,21 @@ function AnimatedBackground({ theme }) {
     return null; // No background animation for black theme
   }
   
+  if (theme === 'brown') {
+    return (
+      <div className="coffee-beans-container">
+        <div className="coffee-bean"></div>
+        <div className="coffee-bean"></div>
+        <div className="coffee-bean"></div>
+        <div className="coffee-bean"></div>
+        <div className="coffee-bean"></div>
+        <div className="coffee-bean"></div>
+        <div className="coffee-bean"></div>
+        <div className="coffee-bean"></div>
+      </div>
+    );
+  }
+  
   // Fall theme (default)
   return (
     <div className="leaves-container">
@@ -76,11 +91,10 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange }) {
   if (!isOpen) return null;
 
   const themes = [
-    { id: 'fall', name: '🍂 Fall Vibes', description: 'Warm autumn colors with falling leaves' },
     { id: 'black', name: '⚫ Clean Black', description: 'Minimalist dark theme for focus' },
     { id: 'winter', name: '❄️ Winter Wonderland', description: 'Cool blues with falling snow' },
-    { id: 'vintage', name: '☕ Vintage Cafe', description: 'Old cafe aesthetic with warm browns and sepia tones' },
-    { id: 'starry', name: '🌌 Starry Night', description: 'Magical night sky with twinkling stars' }
+    { id: 'starry', name: '🌌 Starry Night', description: 'Magical night sky with twinkling stars' },
+    { id: 'brown', name: '🤎 Cozy Brown', description: 'Warm brown tones with rustic charm' }
   ];
 
   return (
@@ -130,14 +144,55 @@ function AnalyticsModal({ isOpen, onClose, applications }) {
   const generateAnalytics = async () => {
     setLoading(true);
     
-    // Simulate loading for fun animation
+    // Faster processing - reduced loading time
     setTimeout(() => {
-      setAnalyticsData({ 
-        status: 'maintenance',
-        message: 'Will be implemented with Spring Boot later'
-      });
+      const analytics = processApplicationsData(applications);
+      setAnalyticsData(analytics);
       setLoading(false);
-    }, 1500);
+    }, 800);
+  };
+
+  // Process applications data and generate analytics - Simplified for performance
+  const processApplicationsData = (apps) => {
+    if (!apps || apps.length === 0) {
+      return {
+        totalApplications: 0,
+        successRate: 0,
+        statusCounts: {},
+        successCount: 0,
+        status: 'empty',
+        message: 'No applications to analyze yet'
+      };
+    }
+
+    // Simplified analytics - only essential data
+    const statusCounts = {};
+    let successCount = 0;
+    const successStatuses = ['offer', 'accepted', 'interview'];
+    
+    // Process only essential data for better performance
+    apps.forEach(app => {
+      if (app && app.status) {
+        const status = app.status;
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+        if (successStatuses.includes(status)) {
+          successCount++;
+        }
+      }
+    });
+    
+    // Calculate success rate
+    const successRate = apps.length > 0 ? 
+      Math.round((successCount / apps.length) * 100 * 10) / 10 : 0;
+    
+    return {
+      totalApplications: apps.length,
+      successRate: successRate,
+      statusCounts: statusCounts,
+      successCount: successCount,
+      status: 'success',
+      message: 'Analytics generated successfully!'
+    };
   };
 
 
@@ -162,18 +217,23 @@ function AnalyticsModal({ isOpen, onClose, applications }) {
                 <span></span>
               </div>
             </div>
-                     ) : analyticsData ? (
-             <div className="analytics-content">
-               {/* Check if Spring Boot is down */}
-               {analyticsData.status === 'maintenance' ? (
-                 <div className="fun-maintenance-message">
-                   <div className="popup-emoji">🚀</div>
-                   <h3>Coming Soon!</h3>
-                   <p>{analyticsData.message}</p>
-                   <div className="sparkle">✨</div>
-                 </div>
-               ) : (
+          ) : analyticsData ? (
+            <div className="analytics-content">
+              {/* Check if no data */}
+              {analyticsData.status === 'empty' ? (
+                <div className="fun-maintenance-message">
+                  <div className="popup-emoji">📊</div>
+                  <h3>No Data Yet!</h3>
+                  <p>{analyticsData.message}</p>
+                  <div className="sparkle">✨</div>
+                </div>
+              ) : (
                  <>
+                   {/* Spring Boot Note */}
+                   <div className="spring-boot-note">
+                     <p>🚀 <strong>Client-side Analytics</strong> - Enhanced with Spring Boot backend coming soon!</p>
+                   </div>
+                   
                    {/* Summary Cards */}
                    <div className="analytics-summary">
                      <div className="summary-card">
@@ -190,18 +250,18 @@ function AnalyticsModal({ isOpen, onClose, applications }) {
                                           </div>
                    </div>
                
-               {/* Status Distribution */}
+               {/* Status Distribution - Simplified */}
                <div className="analytics-section">
-                 <h4>📊 Application Status Distribution</h4>
+                 <h4>📊 Application Status</h4>
                  <div className="status-chart">
-                   {Object.entries(analyticsData.statusCounts).map(([status, count]) => (
+                   {analyticsData.statusCounts && Object.entries(analyticsData.statusCounts).map(([status, count]) => (
                      <div key={status} className="status-bar">
                        <span className="status-label">{status.charAt(0).toUpperCase() + status.slice(1)}</span>
                        <div className="status-bar-container">
                          <div 
                            className="status-bar-fill" 
                            style={{ 
-                             width: `${(count / analyticsData.totalApplications) * 100}%`,
+                             width: `${analyticsData.totalApplications > 0 ? (count / analyticsData.totalApplications) * 100 : 0}%`,
                              backgroundColor: getStatusColor(status)
                            }}
                          ></div>
@@ -209,43 +269,6 @@ function AnalyticsModal({ isOpen, onClose, applications }) {
                        <span className="status-count">{count}</span>
                      </div>
                    ))}
-                 </div>
-               </div>
-               
-               {/* Monthly Trends */}
-               <div className="analytics-section">
-                 <h4>📈 Monthly Application Trends</h4>
-                 <div className="monthly-chart">
-                   {Object.entries(analyticsData.monthlyData).map(([month, count]) => (
-                     <div key={month} className="month-bar">
-                       <span className="month-label">{month}</span>
-                       <div className="month-bar-container">
-                         <div 
-                           className="month-bar-fill" 
-                           style={{ 
-                             height: `${(count / Math.max(...Object.values(analyticsData.monthlyData))) * 100}%`
-                           }}
-                         ></div>
-                       </div>
-                       <span className="month-count">{count}</span>
-                     </div>
-                   ))}
-                 </div>
-               </div>
-               
-               {/* Top Companies */}
-               <div className="analytics-section">
-                 <h4>🏢 Top Companies Applied To</h4>
-                 <div className="company-list">
-                   {Object.entries(analyticsData.companyCounts)
-                     .sort(([,a], [,b]) => b - a)
-                     .slice(0, 5)
-                     .map(([company, count]) => (
-                       <div key={company} className="company-item">
-                         <span className="company-name">{company}</span>
-                         <span className="company-count">{count} application{count > 1 ? 's' : ''}</span>
-                       </div>
-                     ))}
                  </div>
                </div>
                  </>
@@ -323,7 +346,7 @@ export default function App() {
   // Load theme from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('jobTrackerTheme');
-    if (savedTheme && ['fall', 'black', 'winter', 'vintage', 'starry'].includes(savedTheme)) {
+    if (savedTheme && ['black', 'winter', 'starry', 'brown'].includes(savedTheme)) {
       setTheme(savedTheme);
     }
   }, []);
@@ -580,46 +603,64 @@ export default function App() {
 
     // Apply date filter
     let matchesDateRange = true;
-    if (filters.dateRange !== 'all' && app.applied_at) {
-      const now = new Date();
-      const appDate = new Date(app.applied_at);
-      let startDate = new Date();
-      
-      switch (filters.dateRange) {
-        case 'today':
-          startDate.setHours(0, 0, 0, 0);
-          matchesDateRange = appDate >= startDate;
-          break;
-        case 'week':
-          startDate.setDate(now.getDate() - 7);
-          matchesDateRange = appDate >= startDate;
-          break;
-        case 'month':
-          startDate.setMonth(now.getMonth() - 1);
-          matchesDateRange = appDate >= startDate;
-          break;
-        case '3months':
-          startDate.setMonth(now.getMonth() - 3);
-          matchesDateRange = appDate >= startDate;
-          break;
-        case '6months':
-          startDate.setMonth(now.getMonth() - 6);
-          matchesDateRange = appDate >= startDate;
-          break;
-        case 'year':
-          startDate.setFullYear(now.getFullYear() - 1);
-          matchesDateRange = appDate >= startDate;
-          break;
-        case 'custom':
-          if (filters.customStartDate) {
-            const start = new Date(filters.customStartDate);
-            matchesDateRange = appDate >= start;
-          }
-          if (filters.customEndDate) {
-            const end = new Date(filters.customEndDate);
-            matchesDateRange = matchesDateRange && appDate <= end;
-          }
-          break;
+    if (filters.dateRange !== 'all') {
+      // Handle dateless applications
+      if (filters.dateRange === 'dateless') {
+        matchesDateRange = !app.applied_at || app.applied_at === '';
+      } else if (app.applied_at) {
+        // Only process applications that have dates
+        const now = new Date();
+        const appDate = new Date(app.applied_at);
+        let startDate = new Date();
+        let endDate = new Date();
+        
+        switch (filters.dateRange) {
+          case 'today':
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(23, 59, 59, 999);
+            matchesDateRange = appDate >= startDate && appDate <= endDate;
+            break;
+          case 'week':
+            startDate.setDate(now.getDate() - 7);
+            startDate.setHours(0, 0, 0, 0);
+            matchesDateRange = appDate >= startDate;
+            break;
+          case 'month':
+            startDate.setMonth(now.getMonth() - 1);
+            startDate.setHours(0, 0, 0, 0);
+            matchesDateRange = appDate >= startDate;
+            break;
+          case '3months':
+            startDate.setMonth(now.getMonth() - 3);
+            startDate.setHours(0, 0, 0, 0);
+            matchesDateRange = appDate >= startDate;
+            break;
+          case '6months':
+            startDate.setMonth(now.getMonth() - 6);
+            startDate.setHours(0, 0, 0, 0);
+            matchesDateRange = appDate >= startDate;
+            break;
+          case 'year':
+            startDate.setFullYear(now.getFullYear() - 1);
+            startDate.setHours(0, 0, 0, 0);
+            matchesDateRange = appDate >= startDate;
+            break;
+          case 'custom':
+            if (filters.customStartDate) {
+              const start = new Date(filters.customStartDate);
+              start.setHours(0, 0, 0, 0);
+              matchesDateRange = appDate >= start;
+            }
+            if (filters.customEndDate) {
+              const end = new Date(filters.customEndDate);
+              end.setHours(23, 59, 59, 999);
+              matchesDateRange = matchesDateRange && appDate <= end;
+            }
+            break;
+        }
+      } else {
+        // If looking for specific date ranges but no date is set, exclude this application
+        matchesDateRange = false;
       }
     }
 
@@ -635,7 +676,7 @@ export default function App() {
         <AnimatedBackground theme={theme} />
         <div className="App">
           <header className="App-header">
-            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'vintage' ? '☕' : theme === 'starry' ? '🌌' : '🍂'} Job Application Tracker</h1>
+            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'brown' ? '🤎' : '🍂'} Job Application Tracker</h1>
             <p>Track your career journey with style</p>
           </header>
 
@@ -687,7 +728,7 @@ export default function App() {
       <AnimatedBackground theme={theme} />
       <div className="App">
         <header className="App-header">
-          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'vintage' ? '☕' : theme === 'starry' ? '🌌' : '🍂'} Job Application Tracker</h1>
+          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'brown' ? '🤎' : '🍂'} Job Application Tracker</h1>
           <div className="row">
             <p>Welcome back, {user.email}</p>
             <div className="row" style={{ gap: '12px' }}>
@@ -756,6 +797,7 @@ export default function App() {
                   { value: '3months', label: 'Last 3 Months' },
                   { value: '6months', label: 'Last 6 Months' },
                   { value: 'year', label: 'This Year' },
+                  { value: 'dateless', label: '📅 No Date Set' },
                   { value: 'custom', label: 'Custom Range' }
                 ].map(option => (
                   <button
