@@ -54,17 +54,17 @@ function AnimatedBackground({ theme }) {
     return null; // No background animation for black theme
   }
   
-  if (theme === 'brown') {
+  if (theme === 'valentines') {
     return (
-      <div className="coffee-beans-container">
-        <div className="coffee-bean"></div>
-        <div className="coffee-bean"></div>
-        <div className="coffee-bean"></div>
-        <div className="coffee-bean"></div>
-        <div className="coffee-bean"></div>
-        <div className="coffee-bean"></div>
-        <div className="coffee-bean"></div>
-        <div className="coffee-bean"></div>
+      <div className="hearts-container">
+        <div className="heart"></div>
+        <div className="heart"></div>
+        <div className="heart"></div>
+        <div className="heart"></div>
+        <div className="heart"></div>
+        <div className="heart"></div>
+        <div className="heart"></div>
+        <div className="heart"></div>
       </div>
     );
   }
@@ -106,7 +106,7 @@ function SettingsModal({ isOpen, onClose, currentTheme, onThemeChange }) {
     { id: 'black', name: '⚫ Clean Black', description: 'Minimalist dark theme for focus' },
     { id: 'winter', name: '❄️ Winter Wonderland', description: 'Cool blues with falling snow' },
     { id: 'starry', name: '🌌 Starry Night', description: 'Magical night sky with twinkling stars' },
-    { id: 'brown', name: '🤎 Cozy Brown', description: 'Warm brown tones with rustic charm' },
+    { id: 'valentines', name: '💕 Valentines', description: 'Sweet pink theme with falling hearts' },
     { id: 'blood-orange', name: '🍊 Blood Orange', description: 'Dark mode with liquid orange & maroon vibes' }
   ];
 
@@ -327,6 +327,8 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [expandedView, setExpandedView] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showNotesPage, setShowNotesPage] = useState(false);
+  const [quickAdder, setQuickAdder] = useState(false);
   
   // Job application states
   const [applications, setApplications] = useState([]);
@@ -359,7 +361,7 @@ export default function App() {
   // Load theme from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('jobTrackerTheme');
-    if (savedTheme && ['black', 'winter', 'starry', 'brown', 'blood-orange'].includes(savedTheme)) {
+    if (savedTheme && ['black', 'winter', 'starry', 'valentines', 'blood-orange'].includes(savedTheme)) {
       setTheme(savedTheme);
     }
   }, []);
@@ -489,6 +491,7 @@ export default function App() {
         applied_at: '',
         notes: ''
       });
+      setQuickAdder(false);
       setShowForm(false);
       loadApplications();
     } catch (err) {
@@ -573,6 +576,7 @@ export default function App() {
   function handleCancel() {
     setShowForm(false);
     setEditingApp(null);
+    setQuickAdder(false);
     setFormData({
       company: '',
       role_title: '',
@@ -689,7 +693,7 @@ export default function App() {
         <AnimatedBackground theme={theme} />
         <div className="App">
           <header className="App-header">
-            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'brown' ? '🤎' : theme === 'blood-orange' ? '🍊' : '🍂'} Job Application Tracker</h1>
+            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'valentines' ? '💕' : theme === 'blood-orange' ? '🍊' : '🍂'} Job Application Tracker</h1>
             <p>Track your career journey with style</p>
           </header>
 
@@ -736,12 +740,59 @@ export default function App() {
     );
   }
 
+  // Show Notes Page
+  if (showNotesPage) {
+    return (
+      <>
+        <AnimatedBackground theme={theme} />
+        <div className="App">
+          <header className="App-header">
+            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'valentines' ? '💕' : theme === 'blood-orange' ? '🍊' : '🍂'} Job Application Tracker</h1>
+            <div className="row">
+              <p>Welcome back, {user.email}</p>
+              <div className="row" style={{ gap: '12px' }}>
+                <button 
+                  onClick={() => setShowSettings(true)}
+                  className="btn-secondary"
+                  style={{ padding: '8px 16px', fontSize: '14px' }}
+                >
+                  ⚙️ Settings
+                </button>
+                <button onClick={handleSignOut} disabled={busy} className="btn-secondary">
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </header>
+          
+          <div className="card" style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center', padding: '60px 40px' }}>
+            <div style={{ fontSize: '64px', marginBottom: '24px' }}>📝</div>
+            <h2 style={{ marginBottom: '16px', color: 'var(--text-primary)' }}>Notes Feature</h2>
+            <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '32px' }}>
+              Coming Soon!
+            </p>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
+              This feature will allow you to store detailed notes about specific job applications.
+            </p>
+            <button
+              onClick={() => setShowNotesPage(false)}
+              className="btn-primary"
+              style={{ fontSize: '16px', padding: '12px 24px' }}
+            >
+              ← Back to Applications
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <AnimatedBackground theme={theme} />
       <div className="App">
         <header className="App-header">
-          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'brown' ? '🤎' : theme === 'blood-orange' ? '🍊' : '🍂'} Job Application Tracker</h1>
+          <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'valentines' ? '💕' : theme === 'blood-orange' ? '🍊' : '🍂'} Job Application Tracker</h1>
           <div className="row">
             <p>Welcome back, {user.email}</p>
             <div className="row" style={{ gap: '12px' }}>
@@ -900,9 +951,16 @@ export default function App() {
           <button
             onClick={() => setExpandedView(!expandedView)}
             className="btn-secondary"
-            style={{ fontSize: '14px', padding: '8px 16px' }}
+            style={{ fontSize: '14px', padding: '8px 16px', marginRight: '12px' }}
           >
             {expandedView ? '📋 Compact View' : '📖 Expanded View'}
+          </button>
+          <button
+            onClick={() => setShowNotesPage(true)}
+            className="btn-secondary"
+            style={{ fontSize: '14px', padding: '8px 16px' }}
+          >
+            📝 Notes
           </button>
         </div>
 
@@ -911,6 +969,18 @@ export default function App() {
             <div className="form-header">
               <h3>🚀 Add New Application</h3>
               <p>Track your next career opportunity</p>
+              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  id="quickAdder"
+                  checked={quickAdder}
+                  onChange={e => setQuickAdder(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <label htmlFor="quickAdder" style={{ cursor: 'pointer', color: 'var(--text-primary)', fontWeight: '500' }}>
+                  ⚡ Quick Adder (Company, Role, Status only)
+                </label>
+              </div>
             </div>
             <form onSubmit={handleSubmitApplication} className="job-form">
               <div className="form-group">
@@ -951,51 +1021,55 @@ export default function App() {
                   <option value="declined">🚫 Declined</option>
                 </select>
               </div>
-              <div className="form-group">
-                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Location</label>
-                <input
-                  type="text"
-                  placeholder="Location (optional)"
-                  value={formData.location}
-                  onChange={e => setFormData({...formData, location: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Source</label>
-                <input
-                  type="text"
-                  placeholder="Source (e.g., LinkedIn, Indeed)"
-                  value={formData.source}
-                  onChange={e => setFormData({...formData, source: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Application Link</label>
-                <input
-                  type="url"
-                  placeholder="Application link (optional)"
-                  value={formData.link}
-                  onChange={e => setFormData({...formData, link: e.target.value})}
-                />
-              </div>
-              <div className="form-group">
-                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Applied Date</label>
-                <input
-                  type="date"
-                  placeholder="Applied date"
-                  value={formData.applied_at}
-                  onChange={e => setFormData({...formData, applied_at: e.target.value})}
-                />
-              </div>
-              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Notes</label>
-                <textarea
-                  placeholder="Add any notes about this application..."
-                  value={formData.notes}
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
-                  rows={3}
-                />
-              </div>
+              {!quickAdder && (
+                <>
+                  <div className="form-group">
+                    <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Location</label>
+                    <input
+                      type="text"
+                      placeholder="Location (optional)"
+                      value={formData.location}
+                      onChange={e => setFormData({...formData, location: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Source</label>
+                    <input
+                      type="text"
+                      placeholder="Source (e.g., LinkedIn, Indeed)"
+                      value={formData.source}
+                      onChange={e => setFormData({...formData, source: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Application Link</label>
+                    <input
+                      type="url"
+                      placeholder="Application link (optional)"
+                      value={formData.link}
+                      onChange={e => setFormData({...formData, link: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Applied Date</label>
+                    <input
+                      type="date"
+                      placeholder="Applied date"
+                      value={formData.applied_at}
+                      onChange={e => setFormData({...formData, applied_at: e.target.value})}
+                    />
+                  </div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Notes</label>
+                    <textarea
+                      placeholder="Add any notes about this application..."
+                      value={formData.notes}
+                      onChange={e => setFormData({...formData, notes: e.target.value})}
+                      rows={3}
+                    />
+                  </div>
+                </>
+              )}
             </form>
             <div className="row" style={{ justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
               <button onClick={handleCancel} className="btn-secondary">
