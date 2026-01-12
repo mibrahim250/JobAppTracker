@@ -328,7 +328,19 @@ export default function App() {
   const [expandedView, setExpandedView] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showNotesPage, setShowNotesPage] = useState(false);
+  const [showInterviewTracker, setShowInterviewTracker] = useState(false);
   const [quickAdder, setQuickAdder] = useState(false);
+  
+  // Interview Tracker states
+  const [interviews, setInterviews] = useState([]);
+  const [showInterviewForm, setShowInterviewForm] = useState(false);
+  const [editingInterview, setEditingInterview] = useState(null);
+  const [interviewFormData, setInterviewFormData] = useState({
+    name: '',
+    time: '',
+    place: '',
+    status: 'in-progress'
+  });
   
   // Job application states
   const [applications, setApplications] = useState([]);
@@ -397,6 +409,13 @@ export default function App() {
       loadApplications();
     }
   }, [user]);
+
+  // Load interviews when Interview Tracker page is opened
+  useEffect(() => {
+    if (showInterviewTracker && user) {
+      loadInterviews();
+    }
+  }, [showInterviewTracker, user]);
 
   async function handleAuth(e) {
     e.preventDefault();
@@ -740,6 +759,266 @@ export default function App() {
     );
   }
 
+  // Load interviews from Supabase
+  async function loadInterviews() {
+    try {
+      const { data, error } = await supabase
+        .from('interviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setInterviews(data || []);
+    } catch (err) {
+      console.error('Error loading interviews:', err);
+      setMsg('Failed to load interviews: ' + err.message);
+    }
+  }
+
+  // Interview Tracker handlers
+  async function handleSubmitInterview(e) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg('');
+    
+    try {
+      if (editingInterview) {
+        // Update existing interview
+        const { error } = await supabase
+          .from('interviews')
+          .update({
+            ...interviewFormData
+          })
+          .eq('id', editingInterview.id);
+        
+        if (error) throw error;
+        setMsg('Interview updated successfully!');
+      } else {
+        // Add new interview
+        const { error } = await supabase
+          .from('interviews')
+          .insert([{
+            ...interviewFormData,
+            user_id: user.id
+          }]);
+        
+        if (error) throw error;
+        setMsg('Interview added successfully!');
+      }
+      
+      setInterviewFormData({ name: '', time: '', place: '', status: 'in-progress' });
+      setShowInterviewForm(false);
+      setEditingInterview(null);
+      loadInterviews();
+    } catch (err) {
+      setMsg('Failed to save interview: ' + err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDeleteInterview(id) {
+    if (!confirm('Are you sure you want to delete this interview?')) return;
+    
+    setBusy(true);
+    try {
+      const { error } = await supabase
+        .from('interviews')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      setMsg('Interview deleted successfully!');
+      loadInterviews();
+    } catch (err) {
+      setMsg('Failed to delete interview: ' + err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handleEditInterview(interview) {
+    setEditingInterview(interview);
+    setInterviewFormData({
+      name: interview.name,
+      time: interview.time,
+      place: interview.place,
+      status: interview.status
+    });
+    setShowInterviewForm(true);
+  }
+
+  // Show Interview Tracker Page
+  if (showInterviewTracker) {
+    return (
+      <>
+        <AnimatedBackground theme={theme} />
+        <div className="App">
+          <header className="App-header">
+            <h1>{theme === 'winter' ? '❄️' : theme === 'black' ? '⚫' : theme === 'starry' ? '🌌' : theme === 'valentines' ? '💕' : theme === 'blood-orange' ? '🍊' : '🍂'} Job Application Tracker</h1>
+            <div className="row">
+              <p>Welcome back, {user.email}</p>
+              <div className="row" style={{ gap: '12px' }}>
+                <button 
+                  onClick={() => setShowSettings(true)}
+                  className="btn-secondary"
+                  style={{ padding: '8px 16px', fontSize: '14px' }}
+                >
+                  ⚙️ Settings
+                </button>
+                <button onClick={handleSignOut} disabled={busy} className="btn-secondary">
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </header>
+
+          {msg && (
+            <div className="card" style={{ marginBottom: '16px' }}>
+              <p style={{ margin: 0, opacity: 0.85, textAlign: 'center' }}>{msg}</p>
+            </div>
+          )}
+
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+            <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>📅 Interview Tracker ({interviews.length})</h2>
+            <button
+              onClick={() => setShowInterviewForm(true)}
+              disabled={showInterviewForm || editingInterview}
+              className="btn-primary"
+              style={{ fontSize: '16px', padding: '12px 24px' }}
+            >
+              + Add Interview
+            </button>
+          </div>
+
+          {showInterviewForm && (
+            <div className="card" style={{ marginBottom: '24px' }}>
+              <div className="form-header">
+                <h3>{editingInterview ? '✏️ Edit Interview' : '📅 Add New Interview'}</h3>
+                <p>{editingInterview ? 'Update interview details' : 'Track your upcoming interviews'}</p>
+              </div>
+              <form onSubmit={handleSubmitInterview} className="job-form">
+                <div className="form-group">
+                  <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Name</label>
+                  <input
+                    type="text"
+                    placeholder="Interviewer/Company name"
+                    value={interviewFormData.name}
+                    onChange={e => setInterviewFormData({...interviewFormData, name: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Time</label>
+                  <input
+                    type="time"
+                    value={interviewFormData.time}
+                    onChange={e => setInterviewFormData({...interviewFormData, time: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Place</label>
+                  <input
+                    type="text"
+                    placeholder="Location or platform (e.g., Zoom, Office, etc.)"
+                    value={interviewFormData.place}
+                    onChange={e => setInterviewFormData({...interviewFormData, place: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Status</label>
+                  <select
+                    value={interviewFormData.status}
+                    onChange={e => setInterviewFormData({...interviewFormData, status: e.target.value})}
+                    required
+                  >
+                    <option value="in-progress">🟡 In Progress</option>
+                    <option value="done">✅ Done</option>
+                  </select>
+                </div>
+              </form>
+              <div className="row" style={{ justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+                <button 
+                  onClick={() => {
+                    setShowInterviewForm(false);
+                    setEditingInterview(null);
+                    setInterviewFormData({ name: '', time: '', place: '', status: 'in-progress' });
+                  }}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleSubmitInterview}
+                  disabled={busy || !interviewFormData.name || !interviewFormData.time || !interviewFormData.place}
+                  className="btn-primary"
+                >
+                  {busy ? 'Saving...' : (editingInterview ? 'Update Interview' : 'Add Interview')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {interviews.length === 0 ? (
+            <div className="card empty-state">
+              <p>📅 No interviews tracked yet. Add your first interview to get started!</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {interviews.map(interview => (
+                <div key={interview.id} className="card application-card">
+                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ margin: '0 0 8px 0' }}>{interview.name}</h3>
+                      <p className="meta" style={{ margin: '4px 0' }}>
+                        🕐 {interview.time} | 📍 {interview.place}
+                      </p>
+                    </div>
+                    <div className="row" style={{ gap: '12px', alignItems: 'center' }}>
+                      <span 
+                        className={`status-badge ${interview.status === 'done' ? 'status-accepted' : 'status-interview'}`}
+                        style={{ fontSize: '12px', padding: '6px 12px' }}
+                      >
+                        {interview.status === 'done' ? '✅ Done' : '🟡 In Progress'}
+                      </span>
+                      <button 
+                        onClick={() => handleEditInterview(interview)}
+                        className="btn-secondary"
+                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                      >
+                        ✏️
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteInterview(interview.id)}
+                        disabled={busy}
+                        className="btn-danger"
+                        style={{ fontSize: '11px', padding: '4px 8px' }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ marginTop: '32px', textAlign: 'center' }}>
+            <button
+              onClick={() => { setShowInterviewTracker(false); setMsg(''); }}
+              className="btn-primary"
+              style={{ fontSize: '16px', padding: '12px 24px' }}
+            >
+              ← Back to Applications
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   // Show Notes Page
   if (showNotesPage) {
     return (
@@ -958,9 +1237,16 @@ export default function App() {
           <button
             onClick={() => setShowNotesPage(true)}
             className="btn-secondary"
-            style={{ fontSize: '14px', padding: '8px 16px' }}
+            style={{ fontSize: '14px', padding: '8px 16px', marginRight: '12px' }}
           >
             📝 Notes
+          </button>
+          <button
+            onClick={() => setShowInterviewTracker(true)}
+            className="btn-secondary"
+            style={{ fontSize: '14px', padding: '8px 16px' }}
+          >
+            📅 Interview Tracker
           </button>
         </div>
 
