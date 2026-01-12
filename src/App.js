@@ -339,8 +339,26 @@ export default function App() {
     name: '',
     time: '',
     place: '',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Default to user's timezone
     status: 'in-progress'
   });
+
+  // Common timezones for interviews
+  const timezones = [
+    { value: 'America/New_York', label: '🇺🇸 Eastern Time (ET)' },
+    { value: 'America/Chicago', label: '🇺🇸 Central Time (CT)' },
+    { value: 'America/Denver', label: '🇺🇸 Mountain Time (MT)' },
+    { value: 'America/Los_Angeles', label: '🇺🇸 Pacific Time (PT)' },
+    { value: 'America/Phoenix', label: '🇺🇸 Arizona Time (MST)' },
+    { value: 'Asia/Karachi', label: '🇵🇰 Pakistan Time (PKT)' },
+    { value: 'Asia/Dubai', label: '🇦🇪 UAE Time (GST)' },
+    { value: 'Asia/Kolkata', label: '🇮🇳 India Time (IST)' },
+    { value: 'Europe/London', label: '🇬🇧 UK Time (GMT/BST)' },
+    { value: 'Europe/Paris', label: '🇪🇺 Central European Time (CET)' },
+    { value: 'Asia/Tokyo', label: '🇯🇵 Japan Time (JST)' },
+    { value: 'Australia/Sydney', label: '🇦🇺 Australia Eastern Time (AEST)' },
+    { value: 'UTC', label: '🌍 UTC' }
+  ];
   
   // Job application states
   const [applications, setApplications] = useState([]);
@@ -806,7 +824,7 @@ export default function App() {
         setMsg('Interview added successfully!');
       }
       
-      setInterviewFormData({ name: '', time: '', place: '', status: 'in-progress' });
+      setInterviewFormData({ name: '', time: '', place: '', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, status: 'in-progress' });
       setShowInterviewForm(false);
       setEditingInterview(null);
       loadInterviews();
@@ -843,6 +861,7 @@ export default function App() {
       name: interview.name,
       time: interview.time,
       place: interview.place,
+      timezone: interview.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
       status: interview.status
     });
     setShowInterviewForm(true);
@@ -918,6 +937,18 @@ export default function App() {
                   />
                 </div>
                 <div className="form-group">
+                  <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Timezone</label>
+                  <select
+                    value={interviewFormData.timezone}
+                    onChange={e => setInterviewFormData({...interviewFormData, timezone: e.target.value})}
+                    required
+                  >
+                    {timezones.map(tz => (
+                      <option key={tz.value} value={tz.value}>{tz.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
                   <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Place</label>
                   <input
                     type="text"
@@ -944,7 +975,7 @@ export default function App() {
                   onClick={() => {
                     setShowInterviewForm(false);
                     setEditingInterview(null);
-                    setInterviewFormData({ name: '', time: '', place: '', status: 'in-progress' });
+                    setInterviewFormData({ name: '', time: '', place: '', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, status: 'in-progress' });
                   }}
                   className="btn-secondary"
                 >
@@ -973,7 +1004,7 @@ export default function App() {
                     <div style={{ flex: 1 }}>
                       <h3 style={{ margin: '0 0 8px 0' }}>{interview.name}</h3>
                       <p className="meta" style={{ margin: '4px 0' }}>
-                        🕐 {interview.time} | 📍 {interview.place}
+                        🕐 {interview.time} {interview.timezone ? `(${timezones.find(tz => tz.value === interview.timezone)?.label.split(' ').slice(1).join(' ') || interview.timezone})` : ''} | 📍 {interview.place}
                       </p>
                     </div>
                     <div className="row" style={{ gap: '12px', alignItems: 'center' }}>
