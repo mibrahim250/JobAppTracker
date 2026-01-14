@@ -329,7 +329,7 @@ export default function App() {
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showNotesPage, setShowNotesPage] = useState(false);
   const [showInterviewTracker, setShowInterviewTracker] = useState(false);
-  const [quickAdder, setQuickAdder] = useState(false);
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
   
   // Interview Tracker states
   const [interviews, setInterviews] = useState([]);
@@ -502,41 +502,110 @@ export default function App() {
   }
 
   async function handleSubmitApplication(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
+    // Safety check: don't submit if required fields are empty
+    if (!formData.company || !formData.role_title) {
+      setMsg('Please fill in Company and Role fields.');
+      return;
+    }
+    
     setBusy(true);
     setMsg('');
     
     try {
+      // Auto-set date to today if using Quick Add mode and no date set
+      let appliedDate;
+      if (isQuickAdding) {
+        // In Quick Add mode, always use today's date if not set, otherwise use the one in form
+        appliedDate = formData.applied_at || new Date().toISOString().split('T')[0];
+      } else {
+        appliedDate = formData.applied_at || null;
+      }
+
       const { error } = await supabase
         .from('job_applications')
         .insert([{
           ...formData,
           user_id: user.id,
-          applied_at: formData.applied_at || null
+          applied_at: appliedDate
         }]);
       
       if (error) throw error;
       
-      setMsg('Application added successfully!');
-      setFormData({
-        company: '',
-        role_title: '',
-        status: 'applied',
-        location: '',
-        source: '',
-        link: '',
-        applied_at: '',
-        notes: ''
-      });
-      setQuickAdder(false);
-      setShowForm(false);
-      loadApplications();
+      if (isQuickAdding) {
+        // Quick Add mode: keep form open, only clear company and role, keep status and date
+        setMsg(`Application added! (Quick Add Mode - form stays open)`);
+        // Keep today's date for next applications in Quick Add mode
+        const nextDate = appliedDate || new Date().toISOString().split('T')[0];
+        setFormData({
+          ...formData,
+          company: '',
+          role_title: '',
+          applied_at: nextDate // Keep today's date for next one
+          // Keep status, location, source, link, notes - user can change them
+        });
+        loadApplications(); // Refresh list immediately to show new app
+      } else {
+        // Normal mode: clear everything and close form
+        setMsg('Application added successfully!');
+        setFormData({
+          company: '',
+          role_title: '',
+          status: 'applied',
+          location: '',
+          source: '',
+          link: '',
+          applied_at: '',
+          notes: ''
+        });
+        setShowForm(false);
+        loadApplications();
+      }
     } catch (err) {
       setMsg('Failed to add application: ' + err.message);
     } finally {
       setBusy(false);
     }
   }
+
+  // Start Quick Add Mode (opens form and keeps it open)
+  function startQuickAddMode() {
+    setIsQuickAdding(true);
+    setShowForm(true); // Open the form
+    // Auto-set today's date for quick add
+    const todayDate = new Date().toISOString().split('T')[0];
+    setFormData({
+      company: '',
+      role_title: '',
+      status: 'applied',
+      location: '',
+      source: '',
+      link: '',
+      applied_at: todayDate, // Set today's date
+      notes: ''
+    });
+    setMsg('Quick Add Mode: Form is open - fill Company & Role, then click "Add Application". Form stays open for multiple entries. Click "Stop Quick Add" when done.');
+  }
+
+  // Stop Quick Add Mode (closes form)
+  function stopQuickAddMode() {
+    setIsQuickAdding(false);
+    setShowForm(false);
+    setFormData({
+      company: '',
+      role_title: '',
+      status: 'applied',
+      location: '',
+      source: '',
+      link: '',
+      applied_at: '',
+      notes: ''
+    });
+    setMsg('Quick Add mode stopped. All applications have been saved.');
+    loadApplications(); // Refresh to show all added applications
+  }
+
 
   async function handleUpdateApplication(e) {
     e.preventDefault();
@@ -613,7 +682,7 @@ export default function App() {
   function handleCancel() {
     setShowForm(false);
     setEditingApp(null);
-    setQuickAdder(false);
+    setIsQuickAdding(false);
     setFormData({
       company: '',
       role_title: '',
@@ -1131,7 +1200,7 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
             <button
               onClick={() => setShowForm(true)}
-              disabled={showForm || editingApp}
+              disabled={showForm || editingApp || isQuickAdding}
               className="btn-primary"
               style={{ fontSize: '16px', padding: '12px 24px' }}
             >
@@ -1145,6 +1214,15 @@ export default function App() {
                 onChange={e => setFilters(prev => ({ ...prev, searchTerm: e.target.value }))}
                 className="inline-search-input"
               />
+              <button
+                onClick={isQuickAdding ? stopQuickAddMode : startQuickAddMode}
+                disabled={editingApp}
+                className={isQuickAdding ? "btn-danger" : "btn-primary"}
+                style={{ fontSize: '12px', padding: '6px 12px', width: 'fit-content' }}
+                title={isQuickAdding ? 'Stop Quick Adder' : 'Open Quick Adder to add multiple applications'}
+              >
+                {isQuickAdding ? '🛑 Quick Adder' : '⚡ Quick Adder'}
+              </button>
               <button
                 onClick={() => setFilters(prev => ({ ...prev, isExpanded: !prev.isExpanded }))}
                 className="btn-primary"
@@ -1284,20 +1362,15 @@ export default function App() {
 {showForm && (
           <div className="card" style={{ marginBottom: '24px' }}>
             <div className="form-header">
-              <h3>🚀 Add New Application</h3>
-              <p>Track your next career opportunity</p>
-              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="checkbox"
-                  id="quickAdder"
-                  checked={quickAdder}
-                  onChange={e => setQuickAdder(e.target.checked)}
-                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                />
-                <label htmlFor="quickAdder" style={{ cursor: 'pointer', color: 'var(--text-primary)', fontWeight: '500' }}>
-                  ⚡ Quick Adder (Company, Role, Status only)
-                </label>
-              </div>
+              <h3>🚀 {isQuickAdding ? 'Quick Add Mode - Add Multiple Applications' : 'Add New Application'}</h3>
+              <p>{isQuickAdding ? 'Form stays open - fill Company & Role, click "Add Application" repeatedly' : 'Track your next career opportunity'}</p>
+              {isQuickAdding && (
+                <div style={{ marginTop: '12px', padding: '12px', backgroundColor: 'var(--accent-primary)', opacity: 0.1, borderRadius: '8px', border: '1px solid var(--accent-primary)' }}>
+                  <p style={{ margin: 0, color: 'var(--accent-primary)', fontWeight: '600', fontSize: '14px' }}>
+                    ⚡ Quick Add Active: Form stays open after each submission. Date is auto-set to today.
+                  </p>
+                </div>
+              )}
             </div>
             <form onSubmit={handleSubmitApplication} className="job-form">
               <div className="form-group">
@@ -1338,7 +1411,7 @@ export default function App() {
                   <option value="declined">🚫 Declined</option>
                 </select>
               </div>
-              {!quickAdder && (
+              {!isQuickAdding && (
                 <>
                   <div className="form-group">
                     <label style={{ fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>Location</label>
@@ -1399,6 +1472,11 @@ export default function App() {
               >
                 {busy ? 'Saving...' : 'Add Application'}
               </button>
+              {isQuickAdding && (
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                  💡 Tip: After adding, form stays open. Fill new Company & Role to add more!
+                </span>
+              )}
             </div>
           </div>
         )}
